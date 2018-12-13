@@ -100,48 +100,69 @@ Message Zforce::GetMessage()
   return (Message)msg;
 }
 
+int Zforce::GetDataReady()
+{
+  return digitalRead(dataReady);
+}
+
 void Zforce::VirtualParse(uint8_t* payload)
 {
-  Message msg;
-  msg.type = payload[2];
-
-  switch(msg.type)
+  switch(payload[2]) // Check if the payload is a response to a request or a notification.
   {
-    case RESPONSE:
-      switch(payload[8])
+    case 0xEF:
+      switch(lastSentMessage)
       {
-        case 0x65: // It's an enable
-          Enable enable = (Enable)msg;
+        case ENABLE:
+          Enable enable;
+          enable.type = ENABLE;
           switch (payload[10])
           {
-            case 0x80: // It's disabled
+            case 0x80:
               enable.enabled = false;
             break;
 
-            case 0x81: // It's enabled
+            case 0x81:
               enable.enabled = true;
             break;
 
             default:
             break;
           }
+          Enqueue((Message)enable);
         break;
-        case 0x73: // It's a device configuration
+
+        case TOUCHACTIVEAREA:
+          TouchActiveArea touchActiveArea;
+
+          touchActiveArea.type = TOUCHACTIVEAREA;
+          ParseTouchActiveArea(&touchActiveArea, payload);
+          Enqueue((Message)touchActiveArea);
         break;
+
+        case REVERSEX:
+        break;
+
+        case REVERSEY:
+        break;
+
+        case FLIPXY:
+        break;
+
+        case REPORTEDTOUCHES:
+        break;
+
         default:
         break;
       }
-      
     break;
 
-    case NOTIFICATION:
+    case 0xF0:
       if (payload[8] == 0xA0) // Check the identifier if this is a touch message or something else.
       {
         uint8_t touchCount = payload[9] / 11; // Calculate the amount of touch objects.
         for (uint8_t i = 0; i < touchCount; i++)
         {
-          Touch touch = (Touch)msg;
-
+          Touch touch;
           touch.id = payload[12 + (i * 11)];
           touch.event = (TouchEvent)(payload[13 + (i * 11)];
           touch.x = payload[14 + (i * 11)] << 8;
@@ -149,7 +170,7 @@ void Zforce::VirtualParse(uint8_t* payload)
           touch.y = payload[16 + (i * 11)] << 8;
           touch.y |= payload[17 + (i * 11)];
 
-          Enqueue(msg);
+          Enqueue((Message)touch);
         }
       }
     break;
@@ -157,12 +178,14 @@ void Zforce::VirtualParse(uint8_t* payload)
     default:
     break;
   }
-
 }
 
-int Zforce::GetDataReady()
+void Zforce::ParseTouchActiveArea(Message* msg, uint8_t* payload)
 {
-  return digitalRead(dataReady);
+  for (int i = 0; i < sizeof(payload); i++)
+  {
+    
+  }
 }
 
 void Zforce::Enqueue(Message msg)

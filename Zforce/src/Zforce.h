@@ -14,8 +14,13 @@ enum TouchEvent
 
 enum MessageType
 {
-	RESPONSE = 0xEF,
-	NOTIFICATION = 0xF0
+	ENABLE,
+	TOUCHACTIVEAREA,
+	REVERSEX,
+	REVERSEY,
+	FLIPXY,
+	REPORTEDTOUCHES,
+	TOUCH
 };
 
 enum MessageIdentifier
@@ -93,6 +98,7 @@ class Zforce
 		int GetLength();
 		int GetDataReady();
 		void VirtualParse(uint8_t* payload);
+		void ParseTouchActiveArea(Message* msg, uint8_t* payload);
 		void Enqueue(Message msg);
 		void Dequeue(Message* msg);
 		uint8_t payload[MAX_PAYLOAD];
