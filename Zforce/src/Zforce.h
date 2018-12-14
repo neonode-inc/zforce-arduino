@@ -14,13 +14,13 @@ enum TouchEvent
 
 enum MessageType
 {
-	ENABLE,
-	TOUCHACTIVEAREA,
-	REVERSEX,
-	REVERSEY,
-	FLIPXY,
-	REPORTEDTOUCHES,
-	TOUCH
+	ENABLETYPE,
+	TOUCHACTIVEAREATYPE,
+	REVERSEXTYPE,
+	REVERSEYTYPE,
+	FLIPXYTYPE,
+	REPORTEDTOUCHESTYPE,
+	TOUCHTYPE
 };
 
 enum MessageIdentifier
@@ -30,15 +30,17 @@ enum MessageIdentifier
 	REVERSEX,
 	REVERSEY,
 	FLIPXY,
-	REPORTEDTOUCHES
+	REPORTEDTOUCHES,
+	UNKNOWN
 };
 
 struct Message
 {
 	MessageType type;
+	Message* next;
 };
 
-struct Touch : Message
+struct TouchData : Message
 {
 	uint16_t x;
 	uint16_t y;
@@ -46,12 +48,12 @@ struct Touch : Message
 	TouchEvent event;
 };
 
-struct Enable : Message
+struct EnableData : Message
 {
 	bool enabled;
 };
 
-struct TouchActiveArea : Message
+struct TouchActiveAreaData : Message
 {
 	uint16_t minX;
 	uint16_t minY;
@@ -59,22 +61,22 @@ struct TouchActiveArea : Message
 	uint16_t maxY;
 };
 
-struct FlipXY : Message
+struct FlipXYData : Message
 {
 	bool flipXY;
 };
 
-struct ReverseX : Message
+struct ReverseXData : Message
 {
-	bool reverseX;
+	bool reversed;
 };
 
-struct ReverseY : Message
+struct ReverseYData : Message
 {
-	bool reverseY;
+	bool reversed;
 };
 
-struct ReportedTouches : Message
+struct ReportedTouchesData : Message
 {
 	uint8_t reportedTouches;
 };
@@ -86,23 +88,31 @@ class Zforce
 		int Read(uint8_t* payload);
 		int Write(uint8_t* payload);
 		bool Enable(bool isEnabled);
-		bool TouchActiveArea(int minX, int minY, int maxX, int maxY); // Missing
-		bool FlipXY(bool isFlipped); // Missing
-		bool ReverseX(bool isRev); // Missing
-		bool ReverseY(bool isRev); // Missing
-		bool ReportedTouches(uint8_t reportedTouches); // Missing
+//		bool TouchActiveArea(int minX, int minY, int maxX, int maxY); // Missing
+//		bool FlipXY(bool isFlipped); // Missing
+//		bool ReverseX(bool isRev); // Missing
+//		bool ReverseY(bool isRev); // Missing
+//		bool ReportedTouches(uint8_t reportedTouches); // Missing
 		void Start(int dr);
-		void Stop(); // Missing
+//		void Stop(); // Missing
 		Message GetMessage();
     private:
 		int GetLength();
 		int GetDataReady();
 		void VirtualParse(uint8_t* payload);
-		void ParseTouchActiveArea(Message* msg, uint8_t* payload);
-		void Enqueue(Message msg);
-		void Dequeue(Message* msg);
-		uint8_t payload[MAX_PAYLOAD];
+		void ParseTouchActiveArea(TouchActiveAreaData* msg, uint8_t* payload);
+		void ParseEnable(EnableData* msg, uint8_t* payload);
+		void ParseReportedTouches(ReportedTouchesData* msg, uint8_t* payload);
+		void ParseReverseX(ReverseXData* msg, uint8_t* payload);
+		void ParseReverseY(ReverseYData* msg, uint8_t* payload);
+		void ParseFlipXY(FlipXYData* msg, uint8_t* payload);
+		void ParseTouch(TouchData* msg, uint8_t* payload);
+		void Enqueue(Message* msg);
+		Message Dequeue();
+		void ClearBuffer(uint8_t* buffer);
+		uint8_t buffer[MAX_PAYLOAD];
 		int dataReady;
+		Message* headNode = nullptr;
 		const int timeout = 1000;
 		MessageIdentifier lastSentMessage;
 };
