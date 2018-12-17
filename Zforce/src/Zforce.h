@@ -34,52 +34,52 @@ enum MessageIdentifier
 	UNKNOWN
 };
 
-struct Message
+typedef struct Message
 {
 	MessageType type;
 	Message* next;
-};
+} Message;
 
-struct TouchData : Message
+typedef struct TouchMessage : public Message
 {
 	uint16_t x;
 	uint16_t y;
 	uint8_t id;
 	TouchEvent event;
-};
+} TouchMessage;
 
-struct EnableData : Message
+typedef struct EnableMessage : public Message
 {
 	bool enabled;
-};
+} EnableMessage;
 
-struct TouchActiveAreaData : Message
+typedef struct TouchActiveAreaMessage : public Message
 {
 	uint16_t minX;
 	uint16_t minY;
 	uint16_t maxX;
 	uint16_t maxY;
-};
+} TouchActiveAreaMessage;
 
-struct FlipXYData : Message
+typedef struct FlipXYMessage : public Message
 {
 	bool flipXY;
-};
+} FlipXYMessage;
 
-struct ReverseXData : Message
+typedef struct ReverseXMessage : public Message
 {
 	bool reversed;
-};
+} ReverseXMessage;
 
-struct ReverseYData : Message
+typedef struct ReverseYMessage : public Message
 {
 	bool reversed;
-};
+} ReverseYMessage;
 
-struct ReportedTouchesData : Message
+typedef struct ReportedTouchesMessage : public Message
 {
 	uint8_t reportedTouches;
-};
+} ReportedTouchesMessage;
 
 class Zforce 
 {
@@ -95,20 +95,22 @@ class Zforce
 //		bool ReportedTouches(uint8_t reportedTouches); // Missing
 		void Start(int dr);
 //		void Stop(); // Missing
-		Message GetMessage();
+		Message* GetMessage();
+		void DestroyMessage(Message * msg);
+		void DestroyEnableMessage(EnableMessage* msg);
+		void DestroyTouchMessage(TouchMessage* msg);
     private:
-		int GetLength();
 		int GetDataReady();
 		void VirtualParse(uint8_t* payload);
-		void ParseTouchActiveArea(TouchActiveAreaData* msg, uint8_t* payload);
-		void ParseEnable(EnableData* msg, uint8_t* payload);
-		void ParseReportedTouches(ReportedTouchesData* msg, uint8_t* payload);
-		void ParseReverseX(ReverseXData* msg, uint8_t* payload);
-		void ParseReverseY(ReverseYData* msg, uint8_t* payload);
-		void ParseFlipXY(FlipXYData* msg, uint8_t* payload);
-		void ParseTouch(TouchData* msg, uint8_t* payload);
+		void ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload);
+		void ParseEnable(EnableMessage* msg, uint8_t* payload);
+		void ParseReportedTouches(ReportedTouchesMessage* msg, uint8_t* payload);
+		void ParseReverseX(ReverseXMessage* msg, uint8_t* payload);
+		void ParseReverseY(ReverseYMessage* msg, uint8_t* payload);
+		void ParseFlipXY(FlipXYMessage* msg, uint8_t* payload);
+		void ParseTouch(TouchMessage* msg, uint8_t* payload, uint8_t i);
 		void Enqueue(Message* msg);
-		Message Dequeue();
+		Message* Dequeue();
 		void ClearBuffer(uint8_t* buffer);
 		uint8_t buffer[MAX_PAYLOAD];
 		int dataReady;

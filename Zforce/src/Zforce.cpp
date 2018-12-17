@@ -17,23 +17,22 @@ void Zforce::Start(int dr)
 int Zforce::Read(uint8_t * payload)
 {
   int status = 0;
-  status = I2c.read(ZFORCE_I2C_ADDRESS, 2);
-
-  if (status)
-  {
-    return status;
-  }
+  
+  I2c.read(ZFORCE_I2C_ADDRESS, 2);
 
   // Read the 2 I2C header bytes.
   payload[0] = I2c.receive();
   payload[1] = I2c.receive();
   
-  status = I2c.read(ZFORCE_I2C_ADDRESS, payload[1], &payload[2]);
+  I2c.read(ZFORCE_I2C_ADDRESS, payload[1], &payload[2]);
 
-  if (status)
+  for (int i = 0; i < payload[1] + 2; i++)
   {
-    return status;
+    Serial.print(payload[i], HEX);
+    Serial.print(" ");
   }
+
+  Serial.println("");
 
   return status; // return 0 if success, otherwise error code according to Atmel Data Sheet
 }
@@ -58,6 +57,8 @@ bool Zforce::Enable(bool isEnabled)
   if(GetDataReady() == HIGH)
   {
     Read(buffer);
+    Serial.println("clear buffer innan skick av enable.");
+    ClearBuffer(buffer);
   }
 
   if (Write(enable))
@@ -66,7 +67,7 @@ bool Zforce::Enable(bool isEnabled)
   }
   else
   {
-    lastSentMessage = enable;
+    lastSentMessage = ENABLE;
   }
 
   long ms = millis();
@@ -79,9 +80,12 @@ bool Zforce::Enable(bool isEnabled)
     }
   }
 
-  if(!Read(buffer) && !failed)
+  if(!failed)
   {
-    failed = true;
+    if(Read(buffer))
+    {
+      failed = true;
+    }
   }
 
   if(!failed)
@@ -99,19 +103,40 @@ int Zforce::GetDataReady()
   return digitalRead(dataReady);
 }
 
-Message Zforce::GetMessage()
+Message* Zforce::GetMessage()
 {
   if(GetDataReady() == HIGH)
   {
+    Serial.println("DataReady e high");
     if(!Read(buffer))
     {
-      VirtualParse(buffer);
-      ClearBuffer(buffer);
+      Serial.println("Read Buffer lyckades");
     }
+      VirtualParse(buffer);
+      Serial.println("Vi har kört virtualparse");
+      ClearBuffer(buffer);
+      Serial.println("Vi har clearat buffern");
   }
+  
+  return Dequeue();
+}
 
-  Message msg = Dequeue();
-  return msg;
+void Zforce::DestroyMessage(Message* msg)
+{
+  delete msg;
+  msg = nullptr;
+}
+
+void Zforce::DestroyEnableMessage(EnableMessage* msg)
+{
+  delete msg;
+  msg = nullptr;
+}
+
+void Zforce::DestroyTouchMessage(TouchMessage* msg)
+{
+  delete msg;
+  msg = nullptr;
 }
 
 void Zforce::VirtualParse(uint8_t* payload)
@@ -119,48 +144,48 @@ void Zforce::VirtualParse(uint8_t* payload)
   switch(payload[2]) // Check if the payload is a response to a request or if it's a notification.
   {
     case 0xEF:
-      switch(lastSentMessage)
+      switch(lastSentMessage) //Assumes that we get the response we expect
       {
         case ENABLE:
-          EnableData* enable = new Enable;
+          EnableMessage* enable = new EnableMessage;
           enable->type = ENABLETYPE;
           ParseEnable(enable, payload);
-          Enqueue((Message*)enable);
+          Enqueue(static_cast<Message*>(enable));
         break;
 
         case TOUCHACTIVEAREA:
-          TouchActiveAreaData* touchActiveArea = new TouchActiveArea;
+          TouchActiveAreaMessage* touchActiveArea = new TouchActiveAreaMessage;
           touchActiveArea->type = TOUCHACTIVEAREATYPE;
           ParseTouchActiveArea(touchActiveArea, payload);
-          Enqueue((Message*)touchActiveArea);
+          Enqueue(static_cast<Message*>(touchActiveArea));
         break;
 
         case REVERSEX:
-          ReverseXData* reverseX = new ReverseX;
+          ReverseXMessage* reverseX = new ReverseXMessage;
           reverseX->type = REVERSEXTYPE;
           ParseReverseX(reverseX, payload);
-          Enqueue((Message*)reverseX);
+          Enqueue(static_cast<Message*>(reverseX));
         break;
 
         case REVERSEY:
-          ReverseYData* reverseY = new ReverseY;
+          ReverseYMessage* reverseY = new ReverseYMessage;
           reverseY->type = REVERSEYTYPE;
           ParseReverseY(reverseY, payload);
-          Enqueue((Message*)reverseY);
+          Enqueue(static_cast<Message*>(reverseY));
         break;
 
         case FLIPXY:
-          FlipXYData* flipXY = new FlipXY;
+          FlipXYMessage* flipXY = new FlipXYMessage;
           flipXY->type = FLIPXYTYPE;
           ParseFlipXY(flipXY, payload);
-          Enqueue((Message*)flipXY);
+          Enqueue(static_cast<Message*>(flipXY));
         break;
 
         case REPORTEDTOUCHES:
-          ReportedTouchesData* reportedTouches = new ReportedTouches;
+          ReportedTouchesMessage* reportedTouches = new ReportedTouchesMessage;
           reportedTouches->type = REPORTEDTOUCHESTYPE;
           ParseReportedTouches(reportedTouches, payload);
-          Enqueue((Message*)reportedTouches);
+          Enqueue(static_cast<Message*>(reportedTouches));
         break;
 
         default:
@@ -171,13 +196,13 @@ void Zforce::VirtualParse(uint8_t* payload)
     case 0xF0:
       if (payload[8] == 0xA0) // Check the identifier if this is a touch message or something else.
       {
-        uint8_t touchCount = payload[9] / 11; // Calculate the amount of touch objects.
+        uint8_t touchCount = 1;//payload[9] / 11; // Calculate the amount of touch objects.
         for (uint8_t i = 0; i < touchCount; i++)
         {
-          TouchData* touch = new Touch;
+          TouchMessage* touch = new TouchMessage;
           touch->type = TOUCHTYPE;
-          ParseTouch(touch, payload);
-          Enqueue((Message*)touch);
+          ParseTouch(touch, payload, i);
+          Enqueue(dynamic_cast<Message*>(touch));
         }
       }
     break;
@@ -188,7 +213,7 @@ void Zforce::VirtualParse(uint8_t* payload)
   lastSentMessage = UNKNOWN;
 }
 
-void Zforce::ParseTouchActiveArea(TouchActiveAreaData* msg, uint8_t* payload)
+void Zforce::ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload)
 {
   const uint8_t offset = 10;
   uint16_t value = 0;
@@ -259,7 +284,7 @@ void Zforce::ParseTouchActiveArea(TouchActiveAreaData* msg, uint8_t* payload)
   }
 }
 
-void Zforce::ParseEnable(EnableData* msg, uint8_t* payload)
+void Zforce::ParseEnable(EnableMessage* msg, uint8_t* payload)
 {
   switch (payload[10])
   {
@@ -276,7 +301,7 @@ void Zforce::ParseEnable(EnableData* msg, uint8_t* payload)
   }
 }
 
-void Zforce::ParseReportedTouches(ReportedTouchesData* msg, uint8_t* payload)
+void Zforce::ParseReportedTouches(ReportedTouchesMessage* msg, uint8_t* payload)
 {
   const uint8_t offset = 10;
   for(int i = offset + payload[11]; i < payload[9] + offset; i++)
@@ -289,7 +314,7 @@ void Zforce::ParseReportedTouches(ReportedTouchesData* msg, uint8_t* payload)
   }
 }
 
-void Zforce::ParseReverseX(ReverseXData* msg, uint8_t* payload)
+void Zforce::ParseReverseX(ReverseXMessage* msg, uint8_t* payload)
 {
   const uint8_t offset = 10;
   for(int i = offset; i < payload[11] + offset; i++)
@@ -302,7 +327,7 @@ void Zforce::ParseReverseX(ReverseXData* msg, uint8_t* payload)
   }
 }
 
-void Zforce::ParseReverseY(ReverseYData* msg, uint8_t* payload)
+void Zforce::ParseReverseY(ReverseYMessage* msg, uint8_t* payload)
 {
   const uint8_t offset = 10;
   for(int i = offset; i < payload[11] + offset; i++)
@@ -315,7 +340,7 @@ void Zforce::ParseReverseY(ReverseYData* msg, uint8_t* payload)
   }
 }
 
-void Zforce::ParseFlipXY(FlipXYData* msg, uint8_t* payload)
+void Zforce::ParseFlipXY(FlipXYMessage* msg, uint8_t* payload)
 {
   const uint8_t offset = 10;
   for(int i = offset; i < payload[11] + offset; i++)
@@ -328,10 +353,10 @@ void Zforce::ParseFlipXY(FlipXYData* msg, uint8_t* payload)
   }
 }
 
-void Zforce::ParseTouch(TouchData* msg, uint8_t* payload)
+void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload, uint8_t i)
 {
   msg->id = payload[12 + (i * 11)];
-  msg->event = (TouchEvent)(payload[13 + (i * 11)];
+  msg->event = (TouchEvent)(payload[13 + (i * 11)]);
   msg->x = payload[14 + (i * 11)] << 8;
   msg->x |= payload[15 + (i * 11)];
   msg->y = payload[16 + (i * 11)] << 8;
@@ -345,28 +370,58 @@ void Zforce::Enqueue(Message* msg)
   if (nullptr == headNode)
   {
     headNode = msg;
-    linkerNode = msg;
   }
   else
   {
     linkerNode = headNode;
     while(nullptr != linkerNode->next)
     {
-      linkerNode = next;
+      linkerNode = linkerNode->next;
     }
     linkerNode->next = msg;
   }
 }
 
-Message Zforce::Dequeue()
+Message* Zforce::Dequeue()
 {
-  Message message;
+  Message* message = nullptr;
   Message* temp;
+
+  if(nullptr != headNode)
+  {
+    switch (headNode->type)
+    {
+      case ENABLETYPE:
+      message = dynamic_cast<Message*>(new EnableMessage);
+      break;
+      case TOUCHACTIVEAREATYPE:
+      break;
+      case REVERSEXTYPE:
+      break;
+      case REVERSEYTYPE:
+      break;
+      case FLIPXYTYPE:
+      break;
+      case REPORTEDTOUCHESTYPE:
+      break;
+      case TOUCHTYPE:
+      message = dynamic_cast<Message*>(new TouchMessage);
+      break;
+      default:
+      break;
+    }
+  }
+
   if (nullptr != headNode)
   {
-    message = *headNode;
+    memcpy(message, headNode, sizeof(headNode));
     temp = headNode;
-    headNode = headNode->next;
+
+    if (nullptr != headNode->next)
+    {
+      headNode = headNode->next;
+    }
+
     delete temp;
     temp = nullptr;
   }
@@ -382,9 +437,5 @@ void Zforce::ClearBuffer(uint8_t* buffer)
 /*
  * Get the first two "I2C bytes" of the message in order to get the length of the whole message.
  */
-int Zforce::GetLength()
-{
-  return length;
-}
 
 Zforce zforce = Zforce();
