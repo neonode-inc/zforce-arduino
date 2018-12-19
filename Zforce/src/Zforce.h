@@ -1,4 +1,6 @@
 #pragma once
+#include <ArduinoSTL.h>
+#include <deque>
 
 #define MAX_PAYLOAD 255
 #define ZFORCE_I2C_ADDRESS 0x50
@@ -20,28 +22,25 @@ enum MessageType
 	REVERSEYTYPE,
 	FLIPXYTYPE,
 	REPORTEDTOUCHESTYPE,
-	TOUCHTYPE
-};
-
-enum MessageIdentifier
-{
-	ENABLE,
-	TOUCHACTIVEAREA,
-	REVERSEX,
-	REVERSEY,
-	FLIPXY,
-	REPORTEDTOUCHES,
-	UNKNOWN
+	TOUCHTYPE,
+	NONE
 };
 
 typedef struct Message
 {
+	virtual ~Message()
+	{
+		
+	}
 	MessageType type;
-	Message* next;
 } Message;
 
 typedef struct TouchMessage : public Message
 {
+	virtual ~TouchMessage()
+	{
+		
+	}
 	uint16_t x;
 	uint16_t y;
 	uint8_t id;
@@ -85,22 +84,19 @@ class Zforce
 {
     public:
 		Zforce();
+		void Start(int dr);
 		int Read(uint8_t* payload);
 		int Write(uint8_t* payload);
 		bool Enable(bool isEnabled);
-//		bool TouchActiveArea(int minX, int minY, int maxX, int maxY); // Missing
-//		bool FlipXY(bool isFlipped); // Missing
-//		bool ReverseX(bool isRev); // Missing
-//		bool ReverseY(bool isRev); // Missing
-//		bool ReportedTouches(uint8_t reportedTouches); // Missing
-		void Start(int dr);
-//		void Stop(); // Missing
+		bool TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16_t maxY);
+		bool FlipXY(bool isFlipped);
+		bool ReverseX(bool isReversed);
+		bool ReverseY(bool isReversed);
+		bool ReportedTouches(uint8_t touches); // Missing
+		int GetDataReady();
 		Message* GetMessage();
 		void DestroyMessage(Message * msg);
-		void DestroyEnableMessage(EnableMessage* msg);
-		void DestroyTouchMessage(TouchMessage* msg);
     private:
-		int GetDataReady();
 		void VirtualParse(uint8_t* payload);
 		void ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload);
 		void ParseEnable(EnableMessage* msg, uint8_t* payload);
@@ -114,9 +110,9 @@ class Zforce
 		void ClearBuffer(uint8_t* buffer);
 		uint8_t buffer[MAX_PAYLOAD];
 		int dataReady;
-		Message* headNode = nullptr;
+		std::deque<Message*> queue;
 		const int timeout = 1000;
-		MessageIdentifier lastSentMessage;
+		MessageType lastSentMessage;
 };
 
 extern Zforce zforce;

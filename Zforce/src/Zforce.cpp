@@ -26,14 +26,6 @@ int Zforce::Read(uint8_t * payload)
   
   I2c.read(ZFORCE_I2C_ADDRESS, payload[1], &payload[2]);
 
-  for (int i = 0; i < payload[1] + 2; i++)
-  {
-    Serial.print(payload[i], HEX);
-    Serial.print(" ");
-  }
-
-  Serial.println("");
-
   return status; // return 0 if success, otherwise error code according to Atmel Data Sheet
 }
 
@@ -57,7 +49,6 @@ bool Zforce::Enable(bool isEnabled)
   if(GetDataReady() == HIGH)
   {
     Read(buffer);
-    Serial.println("clear buffer innan skick av enable.");
     ClearBuffer(buffer);
   }
 
@@ -67,7 +58,353 @@ bool Zforce::Enable(bool isEnabled)
   }
   else
   {
-    lastSentMessage = ENABLE;
+    lastSentMessage = ENABLETYPE;
+  }
+
+  long ms = millis();
+  while(GetDataReady() == LOW)
+  {
+    if((millis() - ms) > timeout)
+    {
+      failed = true;
+      break;
+    }
+  }
+
+  if(!failed)
+  {
+    if(Read(buffer))
+    {
+      failed = true;
+    }
+  }
+
+  if(!failed)
+  {
+    VirtualParse(buffer);
+    ClearBuffer(buffer);
+  }
+
+  return !failed;
+}
+
+bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16_t maxY)
+{
+  bool failed = false;
+
+  uint8_t length = 12;
+
+  uint8_t firstMinX, secondMinX, firstMinY, secondMinY, firstMaxX, secondMaxX, firstMaxY, secondMaxY;
+
+  if (minX > 127)
+  {
+    length++;
+    if (minX > 255)
+    {
+      firstMinX = minX >> 7;
+      secondMinX |= minX;
+    }
+    else
+    {
+      firstMinX = 0;
+      secondMinX = minX;
+    }
+  }
+  else
+  {
+    secondMinX = minX;
+  }
+
+  if (minY > 127)
+  {
+    length++;
+    if (minY > 255)
+    {
+      firstMinY = minY >> 7;
+      secondMinX |= minY;
+    }
+    else
+    {
+      firstMinY = 0;
+      secondMinY = minY;
+    }
+  }
+  else
+  {
+    secondMinY = minY;
+  }
+
+  if (maxX > 127)
+  {
+    length++;
+    if (maxX > 255)
+    {
+      firstMaxX = maxX >> 7;
+      secondMaxX |= maxX;
+    }
+    else
+    {
+      firstMaxX = 0;
+      secondMaxX = maxX;
+    }
+  }
+  else
+  {
+    secondMaxX = maxX;
+  }
+
+  if (maxY > 127)
+  {
+    length++;
+    if (maxY > 255)
+    {
+      firstMaxY = maxY >> 7;
+      secondMaxY |= maxY;
+    }
+    else
+    {
+      firstMaxY = 0;
+      secondMaxY = maxY;
+    }
+  }
+  else
+  {
+    secondMaxY = maxY;
+  }
+
+  Serial.println(maxY);
+  Serial.println(firstMaxY);
+  Serial.println(secondMaxY);
+
+  Serial.println("Fixed all the second and firsts");
+
+  uint8_t test[] = {firstMaxY, secondMaxY};
+
+
+  uint8_t touchActiveArea[] = {0xEE, length + 9, 0xEE, length + 7, 0x40, 0x02, 0x02, 0x00, 0x73, length + 2, 0xA2, length, 
+                               0x80, minX > 127 ? 0x02 : 0x01, minX > 127 ? firstMinX : secondMinX, minX < 127 ? : secondMinX,
+                               0x81, minY > 127 ? 0x02 : 0x01, minY > 127 ? firstMinY : secondMinY, minY < 127 ? : secondMinY,
+                               0x82, maxX > 127 ? 0x02 : 0x01, maxX > 127 ? firstMaxX : secondMaxX, maxX < 127 ? : secondMaxX,
+                               0x83, maxY > 127 ? 0x02 : 0x01, maxY > 127 ? firstMaxY : secondMaxY, maxY < 127 ? : secondMaxY};
+
+                               for (int i = 0; i < sizeof(touchActiveArea); i++)
+                               {
+                                 Serial.print(touchActiveArea[i], HEX);
+                                 Serial.print(" ");
+                               }
+
+  if(GetDataReady() == HIGH)
+  {
+    Read(buffer);
+    ClearBuffer(buffer);
+  }
+
+  if (Write(touchActiveArea))
+  {
+    failed = true;
+  }
+  else
+  {
+    lastSentMessage = TOUCHACTIVEAREATYPE;
+  }
+
+  long ms = millis();
+  while(GetDataReady() == LOW)
+  {
+    if((millis() - ms) > timeout)
+    {
+      failed = true;
+      break;
+    }
+  }
+
+  Serial.print("failed is: ");
+  Serial.print(failed);
+  if(!failed)
+  {
+    if(Read(buffer))
+    {
+      failed = true;
+    }
+  }
+
+  if(!failed)
+  {
+    VirtualParse(buffer);
+    ClearBuffer(buffer);
+  }
+
+  return !failed;
+}
+
+bool Zforce::FlipXY(bool isFlipped)
+{
+  bool failed = false;
+
+  uint8_t flipXY[] = {0xEE, 0x0D, 0xEE, 0x0B, 0x40, 0x02, 0x02, 0x00, 0x73, 0x05, 0xA2, 0x03, 0x86, 0x01, isFlipped ? 0xFF : 0x00};
+
+  if(GetDataReady() == HIGH)
+  {
+    Read(buffer);
+    ClearBuffer(buffer);
+  }
+
+  if (Write(flipXY))
+  {
+    failed = true;
+  }
+  else
+  {
+    lastSentMessage = FLIPXYTYPE;
+  }
+
+  long ms = millis();
+  while(GetDataReady() == LOW)
+  {
+    if((millis() - ms) > timeout)
+    {
+      failed = true;
+      break;
+    }
+  }
+
+  if(!failed)
+  {
+    if(Read(buffer))
+    {
+      failed = true;
+    }
+  }
+
+  if(!failed)
+  {
+    VirtualParse(buffer);
+    ClearBuffer(buffer);
+  }
+
+  return !failed;
+}
+
+bool Zforce::ReverseX(bool isReversed)
+{
+  bool failed = false;
+
+  uint8_t reverseX[] = {0xEE, 0x0D, 0xEE, 0x0B, 0x40, 0x02, 0x02, 0x00, 0x73, 0x05, 0xA2, 0x03, 0x84, 0x01, isReversed ? 0xFF : 0x00};
+
+  if(GetDataReady() == HIGH)
+  {
+    Read(buffer);
+    ClearBuffer(buffer);
+  }
+
+  if (Write(reverseX))
+  {
+    failed = true;
+  }
+  else
+  {
+    lastSentMessage = REVERSEXTYPE;
+  }
+
+  long ms = millis();
+  while(GetDataReady() == LOW)
+  {
+    if((millis() - ms) > timeout)
+    {
+      failed = true;
+      break;
+    }
+  }
+
+  if(!failed)
+  {
+    if(Read(buffer))
+    {
+      failed = true;
+    }
+  }
+
+  if(!failed)
+  {
+    VirtualParse(buffer);
+    ClearBuffer(buffer);
+  }
+
+  return !failed;
+}
+
+bool Zforce::ReverseY(bool isReversed)
+{
+  bool failed = false;
+
+  uint8_t reverseY[] = {0xEE, 0x0D, 0xEE, 0x0B, 0x40, 0x02, 0x02, 0x00, 0x73, 0x05, 0xA2, 0x03, 0x85, 0x01, isReversed ? 0xFF : 0x00};
+
+  if(GetDataReady() == HIGH)
+  {
+    Read(buffer);
+    ClearBuffer(buffer);
+  }
+
+  if (Write(reverseY))
+  {
+    failed = true;
+  }
+  else
+  {
+    lastSentMessage = REVERSEYTYPE;
+  }
+
+  long ms = millis();
+  while(GetDataReady() == LOW)
+  {
+    if((millis() - ms) > timeout)
+    {
+      failed = true;
+      break;
+    }
+  }
+
+  if(!failed)
+  {
+    if(Read(buffer))
+    {
+      failed = true;
+    }
+  }
+
+  if(!failed)
+  {
+    VirtualParse(buffer);
+    ClearBuffer(buffer);
+  }
+
+  return !failed;
+}
+
+bool Zforce::ReportedTouches(uint8_t touches)
+{
+  bool failed = false;
+
+  if(touches > 10)
+  {
+    touches = 10;
+  }
+
+  uint8_t reportedTouches[] = {0xEE, 0x0B, 0xEE, 0x09, 0x40, 0x02, 0x02, 0x00, 0x73, 0x03, 0x86, 0x01, touches};
+
+  if(GetDataReady() == HIGH)
+  {
+    Read(buffer);
+    ClearBuffer(buffer);
+  }
+
+  if (Write(reportedTouches))
+  {
+    failed = true;
+  }
+  else
+  {
+    lastSentMessage = REPORTEDTOUCHESTYPE;
   }
 
   long ms = millis();
@@ -107,33 +444,17 @@ Message* Zforce::GetMessage()
 {
   if(GetDataReady() == HIGH)
   {
-    Serial.println("DataReady e high");
     if(!Read(buffer))
     {
-      Serial.println("Read Buffer lyckades");
-    }
       VirtualParse(buffer);
-      Serial.println("Vi har kört virtualparse");
       ClearBuffer(buffer);
-      Serial.println("Vi har clearat buffern");
+    }
   }
   
   return Dequeue();
 }
 
 void Zforce::DestroyMessage(Message* msg)
-{
-  delete msg;
-  msg = nullptr;
-}
-
-void Zforce::DestroyEnableMessage(EnableMessage* msg)
-{
-  delete msg;
-  msg = nullptr;
-}
-
-void Zforce::DestroyTouchMessage(TouchMessage* msg)
 {
   delete msg;
   msg = nullptr;
@@ -146,46 +467,46 @@ void Zforce::VirtualParse(uint8_t* payload)
     case 0xEF:
       switch(lastSentMessage) //Assumes that we get the response we expect
       {
-        case ENABLE:
+        case ENABLETYPE:
           EnableMessage* enable = new EnableMessage;
           enable->type = ENABLETYPE;
           ParseEnable(enable, payload);
-          Enqueue(static_cast<Message*>(enable));
+          Enqueue(dynamic_cast<Message*>(enable));
         break;
 
-        case TOUCHACTIVEAREA:
+        case TOUCHACTIVEAREATYPE:
           TouchActiveAreaMessage* touchActiveArea = new TouchActiveAreaMessage;
           touchActiveArea->type = TOUCHACTIVEAREATYPE;
           ParseTouchActiveArea(touchActiveArea, payload);
-          Enqueue(static_cast<Message*>(touchActiveArea));
+          Enqueue(dynamic_cast<Message*>(touchActiveArea));
         break;
 
-        case REVERSEX:
+        case REVERSEXTYPE:
           ReverseXMessage* reverseX = new ReverseXMessage;
           reverseX->type = REVERSEXTYPE;
           ParseReverseX(reverseX, payload);
-          Enqueue(static_cast<Message*>(reverseX));
+          Enqueue(dynamic_cast<Message*>(reverseX));
         break;
 
-        case REVERSEY:
+        case REVERSEYTYPE:
           ReverseYMessage* reverseY = new ReverseYMessage;
           reverseY->type = REVERSEYTYPE;
           ParseReverseY(reverseY, payload);
-          Enqueue(static_cast<Message*>(reverseY));
+          Enqueue(dynamic_cast<Message*>(reverseY));
         break;
 
-        case FLIPXY:
+        case FLIPXYTYPE:
           FlipXYMessage* flipXY = new FlipXYMessage;
           flipXY->type = FLIPXYTYPE;
           ParseFlipXY(flipXY, payload);
-          Enqueue(static_cast<Message*>(flipXY));
+          Enqueue(dynamic_cast<Message*>(flipXY));
         break;
 
-        case REPORTEDTOUCHES:
+        case REPORTEDTOUCHESTYPE:
           ReportedTouchesMessage* reportedTouches = new ReportedTouchesMessage;
           reportedTouches->type = REPORTEDTOUCHESTYPE;
           ParseReportedTouches(reportedTouches, payload);
-          Enqueue(static_cast<Message*>(reportedTouches));
+          Enqueue(dynamic_cast<Message*>(reportedTouches));
         break;
 
         default:
@@ -196,7 +517,7 @@ void Zforce::VirtualParse(uint8_t* payload)
     case 0xF0:
       if (payload[8] == 0xA0) // Check the identifier if this is a touch message or something else.
       {
-        uint8_t touchCount = 1;//payload[9] / 11; // Calculate the amount of touch objects.
+        uint8_t touchCount = payload[9] / 11; // Calculate the amount of touch objects.
         for (uint8_t i = 0; i < touchCount; i++)
         {
           TouchMessage* touch = new TouchMessage;
@@ -210,7 +531,7 @@ void Zforce::VirtualParse(uint8_t* payload)
     default:
     break;
   }
-  lastSentMessage = UNKNOWN;
+  lastSentMessage = NONE;
 }
 
 void Zforce::ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload)
@@ -365,66 +686,43 @@ void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload, uint8_t i)
 
 void Zforce::Enqueue(Message* msg)
 {
-  Message* linkerNode = nullptr;
-
-  if (nullptr == headNode)
-  {
-    headNode = msg;
-  }
-  else
-  {
-    linkerNode = headNode;
-    while(nullptr != linkerNode->next)
-    {
-      linkerNode = linkerNode->next;
-    }
-    linkerNode->next = msg;
-  }
+  queue.push_back(msg);
 }
 
 Message* Zforce::Dequeue()
 {
   Message* message = nullptr;
-  Message* temp;
 
-  if(nullptr != headNode)
+  if(!queue.empty())
   {
-    switch (headNode->type)
+    for(uint8_t i = 0; i < queue.size(); i++)
     {
-      case ENABLETYPE:
-      message = dynamic_cast<Message*>(new EnableMessage);
-      break;
-      case TOUCHACTIVEAREATYPE:
-      break;
-      case REVERSEXTYPE:
-      break;
-      case REVERSEYTYPE:
-      break;
-      case FLIPXYTYPE:
-      break;
-      case REPORTEDTOUCHESTYPE:
-      break;
-      case TOUCHTYPE:
-      message = dynamic_cast<Message*>(new TouchMessage);
-      break;
-      default:
-      break;
+      if(queue.at(i)->type != TOUCHTYPE)
+      {
+        message = queue.at(i);
+        queue.erase(queue.begin() + i);
+        break;
+      }
     }
   }
 
-  if (nullptr != headNode)
+  if(nullptr == message)
   {
-    memcpy(message, headNode, sizeof(headNode));
-    temp = headNode;
-
-    if (nullptr != headNode->next)
+    if(!queue.empty())
     {
-      headNode = headNode->next;
+      message = queue.front();
+      queue.pop_front();
     }
-
-    delete temp;
-    temp = nullptr;
   }
+
+  /* TODO Requirements for our own made queue
+
+  1. Need to know if queue is empty or not
+  2. Need to be able to access individual objects in queue
+  3. Need push
+  4. Need pop
+
+  */
 
   return message;
 }
@@ -433,9 +731,5 @@ void Zforce::ClearBuffer(uint8_t* buffer)
 {
   memset(buffer, 0, sizeof(buffer));
 }
-
-/*
- * Get the first two "I2C bytes" of the message in order to get the length of the whole message.
- */
 
 Zforce zforce = Zforce();

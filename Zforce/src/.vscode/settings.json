@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "system_error": "cpp",
+        "deque": "cpp",
+        "list": "cpp",
+        "xiosbase": "cpp",
+        "iosfwd": "cpp",
+        "xlocale": "cpp",
+        "xstring": "cpp",
+        "char_traits": "cpp"
+    }
+}
