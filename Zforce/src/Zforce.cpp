@@ -92,13 +92,12 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
 {
   bool failed = false;
 
-  uint8_t length = 12;
+  uint8_t length = 16;
 
   uint8_t firstMinX, secondMinX, firstMinY, secondMinY, firstMaxX, secondMaxX, firstMaxY, secondMaxY;
 
   if (minX > 127)
   {
-    length++;
     if (minX > 255)
     {
       firstMinX = minX >> 7;
@@ -117,7 +116,6 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
 
   if (minY > 127)
   {
-    length++;
     if (minY > 255)
     {
       firstMinY = minY >> 7;
@@ -136,7 +134,6 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
 
   if (maxX > 127)
   {
-    length++;
     if (maxX > 255)
     {
       firstMaxX = maxX >> 7;
@@ -155,7 +152,6 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
 
   if (maxY > 127)
   {
-    length++;
     if (maxY > 255)
     {
       firstMaxY = maxY >> 7;
@@ -172,26 +168,12 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
     secondMaxY = maxY;
   }
 
-  Serial.println(maxY);
-  Serial.println(firstMaxY);
-  Serial.println(secondMaxY);
-
-  Serial.println("Fixed all the second and firsts");
-
-  uint8_t test[] = {firstMaxY, secondMaxY};
-
-
-  uint8_t touchActiveArea[] = {0xEE, length + 9, 0xEE, length + 7, 0x40, 0x02, 0x02, 0x00, 0x73, length + 2, 0xA2, length, 
-                               0x80, minX > 127 ? 0x02 : 0x01, minX > 127 ? firstMinX : secondMinX, minX < 127 ? : secondMinX,
-                               0x81, minY > 127 ? 0x02 : 0x01, minY > 127 ? firstMinY : secondMinY, minY < 127 ? : secondMinY,
-                               0x82, maxX > 127 ? 0x02 : 0x01, maxX > 127 ? firstMaxX : secondMaxX, maxX < 127 ? : secondMaxX,
-                               0x83, maxY > 127 ? 0x02 : 0x01, maxY > 127 ? firstMaxY : secondMaxY, maxY < 127 ? : secondMaxY};
-
-                               for (int i = 0; i < sizeof(touchActiveArea); i++)
-                               {
-                                 Serial.print(touchActiveArea[i], HEX);
-                                 Serial.print(" ");
-                               }
+  uint8_t touchActiveArea[] = {0xEE, length + 10, 0xEE, length + 8,
+                               0x40, 0x02, 0x02, 0x00, 0x73, length + 2, 0xA2, length, 
+                               0x80, 02, firstMinX, secondMinX,
+                               0x81, 02, firstMinY, secondMinY,
+                               0x82, 02, firstMaxX, secondMaxX,
+                               0x83, 02, firstMaxY, secondMaxY};
 
   if(GetDataReady() == HIGH)
   {
@@ -218,8 +200,7 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
     }
   }
 
-  Serial.print("failed is: ");
-  Serial.print(failed);
+
   if(!failed)
   {
     if(Read(buffer))
@@ -465,53 +446,52 @@ void Zforce::VirtualParse(uint8_t* payload)
   switch(payload[2]) // Check if the payload is a response to a request or if it's a notification.
   {
     case 0xEF:
-      switch(lastSentMessage) //Assumes that we get the response we expect
-      {
-        case ENABLETYPE:
-          EnableMessage* enable = new EnableMessage;
-          enable->type = ENABLETYPE;
-          ParseEnable(enable, payload);
-          Enqueue(dynamic_cast<Message*>(enable));
-        break;
-
-        case TOUCHACTIVEAREATYPE:
+       if(lastSentMessage == TOUCHACTIVEAREATYPE)
+       {
           TouchActiveAreaMessage* touchActiveArea = new TouchActiveAreaMessage;
           touchActiveArea->type = TOUCHACTIVEAREATYPE;
           ParseTouchActiveArea(touchActiveArea, payload);
           Enqueue(dynamic_cast<Message*>(touchActiveArea));
-        break;
-
-        case REVERSEXTYPE:
+       }
+       else if(lastSentMessage == ENABLETYPE)
+       {
+          EnableMessage* enable = new EnableMessage;
+          enable->type = ENABLETYPE;
+          ParseEnable(enable, payload);
+          Enqueue(dynamic_cast<Message*>(enable));
+       }
+       else if(lastSentMessage == REVERSEXTYPE)
+       {
           ReverseXMessage* reverseX = new ReverseXMessage;
           reverseX->type = REVERSEXTYPE;
           ParseReverseX(reverseX, payload);
           Enqueue(dynamic_cast<Message*>(reverseX));
-        break;
-
-        case REVERSEYTYPE:
+       }
+       else if(lastSentMessage == REVERSEYTYPE)
+       {
           ReverseYMessage* reverseY = new ReverseYMessage;
           reverseY->type = REVERSEYTYPE;
           ParseReverseY(reverseY, payload);
           Enqueue(dynamic_cast<Message*>(reverseY));
-        break;
-
-        case FLIPXYTYPE:
+       }
+       else if(lastSentMessage == FLIPXYTYPE)
+       {
           FlipXYMessage* flipXY = new FlipXYMessage;
           flipXY->type = FLIPXYTYPE;
           ParseFlipXY(flipXY, payload);
           Enqueue(dynamic_cast<Message*>(flipXY));
-        break;
-
-        case REPORTEDTOUCHESTYPE:
+       }
+       else if(lastSentMessage == REPORTEDTOUCHESTYPE)
+       {
           ReportedTouchesMessage* reportedTouches = new ReportedTouchesMessage;
           reportedTouches->type = REPORTEDTOUCHESTYPE;
           ParseReportedTouches(reportedTouches, payload);
           Enqueue(dynamic_cast<Message*>(reportedTouches));
-        break;
-
-        default:
-        break;
-      }
+       }
+       else
+       {
+         // Dont recognize the message
+       }
     break;
 
     case 0xF0:
@@ -704,16 +684,16 @@ Message* Zforce::Dequeue()
         break;
       }
     }
-  }
 
-  if(nullptr == message)
-  {
-    if(!queue.empty())
+    if(nullptr == message)
     {
       message = queue.front();
       queue.pop_front();
     }
+
   }
+
+
 
   /* TODO Requirements for our own made queue
 

@@ -16,14 +16,14 @@ enum TouchEvent
 
 enum MessageType
 {
-	ENABLETYPE,
-	TOUCHACTIVEAREATYPE,
-	REVERSEXTYPE,
-	REVERSEYTYPE,
-	FLIPXYTYPE,
-	REPORTEDTOUCHESTYPE,
-	TOUCHTYPE,
-	NONE
+	NONE = 0,
+	ENABLETYPE = 1,
+	TOUCHACTIVEAREATYPE = 2,
+	REVERSEXTYPE = 3,
+	REVERSEYTYPE = 4,
+	FLIPXYTYPE = 5,
+	REPORTEDTOUCHESTYPE = 6,
+	TOUCHTYPE = 7,
 };
 
 typedef struct Message
@@ -49,11 +49,19 @@ typedef struct TouchMessage : public Message
 
 typedef struct EnableMessage : public Message
 {
+	virtual ~EnableMessage()
+	{
+
+	}
 	bool enabled;
 } EnableMessage;
 
 typedef struct TouchActiveAreaMessage : public Message
 {
+	virtual ~TouchActiveAreaMessage()
+	{
+		
+	}
 	uint16_t minX;
 	uint16_t minY;
 	uint16_t maxX;
@@ -62,21 +70,37 @@ typedef struct TouchActiveAreaMessage : public Message
 
 typedef struct FlipXYMessage : public Message
 {
+	virtual ~FlipXYMessage()
+	{
+		
+	}
 	bool flipXY;
 } FlipXYMessage;
 
 typedef struct ReverseXMessage : public Message
 {
+	virtual ~ReverseXMessage()
+	{
+		
+	}
 	bool reversed;
 } ReverseXMessage;
 
 typedef struct ReverseYMessage : public Message
 {
+	virtual ~ReverseYMessage()
+	{
+		
+	}
 	bool reversed;
 } ReverseYMessage;
 
 typedef struct ReportedTouchesMessage : public Message
 {
+	virtual ~ReportedTouchesMessage()
+	{
+		
+	}
 	uint8_t reportedTouches;
 } ReportedTouchesMessage;
 
