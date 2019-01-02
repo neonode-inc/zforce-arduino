@@ -14,7 +14,7 @@ enum TouchEvent
 	GHOST = 4
 };
 
-enum MessageType
+enum class MessageType
 {
 	NONE = 0,
 	ENABLETYPE = 1,
@@ -130,13 +130,14 @@ class Zforce
 		void ParseFlipXY(FlipXYMessage* msg, uint8_t* payload);
 		void ParseTouch(TouchMessage* msg, uint8_t* payload, uint8_t i);
 		void Enqueue(Message* msg);
+		void ParseResponse(uint8_t* payload);
 		Message* Dequeue();
 		void ClearBuffer(uint8_t* buffer);
 		uint8_t buffer[MAX_PAYLOAD];
 		int dataReady;
 		std::deque<Message*> queue;
 		const int timeout = 1000;
-		MessageType lastSentMessage;
+		volatile MessageType lastSentMessage;
 };
 
 extern Zforce zforce;

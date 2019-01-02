@@ -18,13 +18,13 @@ int Zforce::Read(uint8_t * payload)
 {
   int status = 0;
   
-  I2c.read(ZFORCE_I2C_ADDRESS, 2);
+  status = I2c.read(ZFORCE_I2C_ADDRESS, 2);
 
   // Read the 2 I2C header bytes.
   payload[0] = I2c.receive();
   payload[1] = I2c.receive();
   
-  I2c.read(ZFORCE_I2C_ADDRESS, payload[1], &payload[2]);
+  status = I2c.read(ZFORCE_I2C_ADDRESS, payload[1], &payload[2]);
 
   return status; // return 0 if success, otherwise error code according to Atmel Data Sheet
 }
@@ -49,6 +49,7 @@ bool Zforce::Enable(bool isEnabled)
   if(GetDataReady() == HIGH)
   {
     Read(buffer);
+    VirtualParse(buffer);
     ClearBuffer(buffer);
   }
 
@@ -58,7 +59,7 @@ bool Zforce::Enable(bool isEnabled)
   }
   else
   {
-    lastSentMessage = ENABLETYPE;
+    lastSentMessage = MessageType::ENABLETYPE;
   }
 
   long ms = millis();
@@ -92,81 +93,54 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
 {
   bool failed = false;
 
-  uint8_t length = 16;
+  const uint8_t length = 16;
 
   uint8_t firstMinX, secondMinX, firstMinY, secondMinY, firstMaxX, secondMaxX, firstMaxY, secondMaxY;
 
-  if (minX > 127)
+  if (minX > 255)
   {
-    if (minX > 255)
-    {
-      firstMinX = minX >> 7;
-      secondMinX |= minX;
-    }
-    else
-    {
-      firstMinX = 0;
-      secondMinX = minX;
-    }
+    firstMinX = minX >> 8;
+    secondMinX |= minX;
   }
   else
   {
+    firstMinX = 0;
     secondMinX = minX;
   }
 
-  if (minY > 127)
+  if (minY > 255)
   {
-    if (minY > 255)
-    {
-      firstMinY = minY >> 7;
-      secondMinX |= minY;
-    }
-    else
-    {
-      firstMinY = 0;
-      secondMinY = minY;
-    }
+    firstMinY = minY >> 8;
+    secondMinY |= minY;
   }
   else
   {
+    firstMinY = 0;
     secondMinY = minY;
   }
 
-  if (maxX > 127)
+  if (maxX > 255)
   {
-    if (maxX > 255)
-    {
-      firstMaxX = maxX >> 7;
-      secondMaxX |= maxX;
-    }
-    else
-    {
-      firstMaxX = 0;
-      secondMaxX = maxX;
-    }
+    firstMaxX = maxX >> 8;
+    secondMaxX |= maxX;
   }
   else
   {
+    firstMaxX = 0;
     secondMaxX = maxX;
   }
 
-  if (maxY > 127)
+  if (maxY > 255)
   {
-    if (maxY > 255)
-    {
-      firstMaxY = maxY >> 7;
-      secondMaxY |= maxY;
-    }
-    else
-    {
-      firstMaxY = 0;
-      secondMaxY = maxY;
-    }
+    firstMaxY = maxY >> 8;
+    secondMaxY |= maxY;
   }
   else
   {
+    firstMaxY = 0;
     secondMaxY = maxY;
   }
+
 
   uint8_t touchActiveArea[] = {0xEE, length + 10, 0xEE, length + 8,
                                0x40, 0x02, 0x02, 0x00, 0x73, length + 2, 0xA2, length, 
@@ -178,6 +152,7 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
   if(GetDataReady() == HIGH)
   {
     Read(buffer);
+    VirtualParse(buffer);
     ClearBuffer(buffer);
   }
 
@@ -187,7 +162,7 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
   }
   else
   {
-    lastSentMessage = TOUCHACTIVEAREATYPE;
+    lastSentMessage = MessageType::TOUCHACTIVEAREATYPE;
   }
 
   long ms = millis();
@@ -199,7 +174,6 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
       break;
     }
   }
-
 
   if(!failed)
   {
@@ -227,6 +201,7 @@ bool Zforce::FlipXY(bool isFlipped)
   if(GetDataReady() == HIGH)
   {
     Read(buffer);
+    VirtualParse(buffer);
     ClearBuffer(buffer);
   }
 
@@ -236,7 +211,7 @@ bool Zforce::FlipXY(bool isFlipped)
   }
   else
   {
-    lastSentMessage = FLIPXYTYPE;
+    lastSentMessage = MessageType::FLIPXYTYPE;
   }
 
   long ms = millis();
@@ -275,6 +250,7 @@ bool Zforce::ReverseX(bool isReversed)
   if(GetDataReady() == HIGH)
   {
     Read(buffer);
+    VirtualParse(buffer);
     ClearBuffer(buffer);
   }
 
@@ -284,7 +260,7 @@ bool Zforce::ReverseX(bool isReversed)
   }
   else
   {
-    lastSentMessage = REVERSEXTYPE;
+    lastSentMessage = MessageType::REVERSEXTYPE;
   }
 
   long ms = millis();
@@ -323,6 +299,7 @@ bool Zforce::ReverseY(bool isReversed)
   if(GetDataReady() == HIGH)
   {
     Read(buffer);
+    VirtualParse(buffer);
     ClearBuffer(buffer);
   }
 
@@ -332,7 +309,7 @@ bool Zforce::ReverseY(bool isReversed)
   }
   else
   {
-    lastSentMessage = REVERSEYTYPE;
+    lastSentMessage = MessageType::REVERSEYTYPE;
   }
 
   long ms = millis();
@@ -376,6 +353,7 @@ bool Zforce::ReportedTouches(uint8_t touches)
   if(GetDataReady() == HIGH)
   {
     Read(buffer);
+    VirtualParse(buffer);
     ClearBuffer(buffer);
   }
 
@@ -385,7 +363,7 @@ bool Zforce::ReportedTouches(uint8_t touches)
   }
   else
   {
-    lastSentMessage = REPORTEDTOUCHESTYPE;
+    lastSentMessage = MessageType::REPORTEDTOUCHESTYPE;
   }
 
   long ms = millis();
@@ -446,72 +424,87 @@ void Zforce::VirtualParse(uint8_t* payload)
   switch(payload[2]) // Check if the payload is a response to a request or if it's a notification.
   {
     case 0xEF:
-       if(lastSentMessage == TOUCHACTIVEAREATYPE)
-       {
-          TouchActiveAreaMessage* touchActiveArea = new TouchActiveAreaMessage;
-          touchActiveArea->type = TOUCHACTIVEAREATYPE;
-          ParseTouchActiveArea(touchActiveArea, payload);
-          Enqueue(dynamic_cast<Message*>(touchActiveArea));
-       }
-       else if(lastSentMessage == ENABLETYPE)
-       {
-          EnableMessage* enable = new EnableMessage;
-          enable->type = ENABLETYPE;
-          ParseEnable(enable, payload);
-          Enqueue(dynamic_cast<Message*>(enable));
-       }
-       else if(lastSentMessage == REVERSEXTYPE)
-       {
-          ReverseXMessage* reverseX = new ReverseXMessage;
-          reverseX->type = REVERSEXTYPE;
-          ParseReverseX(reverseX, payload);
-          Enqueue(dynamic_cast<Message*>(reverseX));
-       }
-       else if(lastSentMessage == REVERSEYTYPE)
-       {
-          ReverseYMessage* reverseY = new ReverseYMessage;
-          reverseY->type = REVERSEYTYPE;
-          ParseReverseY(reverseY, payload);
-          Enqueue(dynamic_cast<Message*>(reverseY));
-       }
-       else if(lastSentMessage == FLIPXYTYPE)
-       {
-          FlipXYMessage* flipXY = new FlipXYMessage;
-          flipXY->type = FLIPXYTYPE;
-          ParseFlipXY(flipXY, payload);
-          Enqueue(dynamic_cast<Message*>(flipXY));
-       }
-       else if(lastSentMessage == REPORTEDTOUCHESTYPE)
-       {
-          ReportedTouchesMessage* reportedTouches = new ReportedTouchesMessage;
-          reportedTouches->type = REPORTEDTOUCHESTYPE;
-          ParseReportedTouches(reportedTouches, payload);
-          Enqueue(dynamic_cast<Message*>(reportedTouches));
-       }
-       else
-       {
-         // Dont recognize the message
-       }
+    {
+      ParseResponse(payload);
+    }
     break;
-
     case 0xF0:
+    {
       if (payload[8] == 0xA0) // Check the identifier if this is a touch message or something else.
       {
         uint8_t touchCount = payload[9] / 11; // Calculate the amount of touch objects.
         for (uint8_t i = 0; i < touchCount; i++)
         {
           TouchMessage* touch = new TouchMessage;
-          touch->type = TOUCHTYPE;
+          touch->type = MessageType::TOUCHTYPE;
           ParseTouch(touch, payload, i);
-          Enqueue(dynamic_cast<Message*>(touch));
+          Enqueue(touch);
         }
       }
+    }
     break;
 
     default:
     break;
   }
-  lastSentMessage = NONE;
+  lastSentMessage = MessageType::NONE;
+}
+
+void Zforce::ParseResponse(uint8_t* payload)
+{
+  switch(lastSentMessage)
+  {
+    case MessageType::REVERSEYTYPE:
+    {
+      ReverseYMessage* reverseY = new ReverseYMessage;
+      reverseY->type = MessageType::REVERSEYTYPE;
+      ParseReverseY(reverseY, payload);
+      Enqueue(reverseY);
+    }
+    break;
+    case MessageType::ENABLETYPE:
+    {
+      EnableMessage* enable = new EnableMessage;
+      enable->type = MessageType::ENABLETYPE;
+      ParseEnable(enable, payload);
+      Enqueue(enable);
+    }
+    break;
+    case MessageType::TOUCHACTIVEAREATYPE:
+    {
+      TouchActiveAreaMessage* touchActiveArea = new TouchActiveAreaMessage;
+      touchActiveArea->type = MessageType::TOUCHACTIVEAREATYPE;
+      ParseTouchActiveArea(touchActiveArea, payload);
+      Enqueue(touchActiveArea);
+    }
+    break;
+    case MessageType::REVERSEXTYPE:
+    {
+      ReverseXMessage* reverseX = new ReverseXMessage;
+      reverseX->type = MessageType::REVERSEXTYPE;
+      ParseReverseX(reverseX, payload);
+      Enqueue(reverseX);
+    }
+    break;
+    case MessageType::FLIPXYTYPE:
+    {
+      FlipXYMessage* flipXY = new FlipXYMessage;
+      flipXY->type = MessageType::FLIPXYTYPE;
+      ParseFlipXY(flipXY, payload);
+      Enqueue(flipXY);
+    }
+    break;
+    case MessageType::REPORTEDTOUCHESTYPE:
+    {
+      ReportedTouchesMessage* reportedTouches = new ReportedTouchesMessage;
+      reportedTouches->type = MessageType::REPORTEDTOUCHESTYPE;
+      ParseReportedTouches(reportedTouches, payload);
+      Enqueue(reportedTouches);
+    }
+    break;
+    default:
+    break;
+  }
 }
 
 void Zforce::ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload)
@@ -677,7 +670,7 @@ Message* Zforce::Dequeue()
   {
     for(uint8_t i = 0; i < queue.size(); i++)
     {
-      if(queue.at(i)->type != TOUCHTYPE)
+      if(queue.at(i)->type != MessageType::TOUCHTYPE)
       {
         message = queue.at(i);
         queue.erase(queue.begin() + i);
