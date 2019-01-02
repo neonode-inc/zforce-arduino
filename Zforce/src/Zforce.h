@@ -1,8 +1,6 @@
 #pragma once
-#include <ArduinoSTL.h>
-#include <deque>
 
-#define MAX_PAYLOAD 255
+#define MAX_PAYLOAD 127
 #define ZFORCE_I2C_ADDRESS 0x50
 
 enum TouchEvent
@@ -24,7 +22,17 @@ enum class MessageType
 	FLIPXYTYPE = 5,
 	REPORTEDTOUCHESTYPE = 6,
 	TOUCHTYPE = 7,
+	BOOTCOMPLETETYPE = 8
 };
+
+
+typedef struct TouchData
+{
+	uint16_t x;
+	uint16_t y;
+	uint8_t id;
+	TouchEvent event;
+} TouchData;
 
 typedef struct Message
 {
@@ -39,12 +47,11 @@ typedef struct TouchMessage : public Message
 {
 	virtual ~TouchMessage()
 	{
-		
+		delete[] touchData;
+		touchData = nullptr;
 	}
-	uint16_t x;
-	uint16_t y;
-	uint8_t id;
-	TouchEvent event;
+	uint8_t touchCount;
+	TouchData* touchData;
 } TouchMessage;
 
 typedef struct EnableMessage : public Message
@@ -104,6 +111,7 @@ typedef struct ReportedTouchesMessage : public Message
 	uint8_t reportedTouches;
 } ReportedTouchesMessage;
 
+
 class Zforce 
 {
     public:
@@ -121,22 +129,18 @@ class Zforce
 		Message* GetMessage();
 		void DestroyMessage(Message * msg);
     private:
-		void VirtualParse(uint8_t* payload);
+		Message* VirtualParse(uint8_t* payload);
 		void ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload);
 		void ParseEnable(EnableMessage* msg, uint8_t* payload);
 		void ParseReportedTouches(ReportedTouchesMessage* msg, uint8_t* payload);
 		void ParseReverseX(ReverseXMessage* msg, uint8_t* payload);
 		void ParseReverseY(ReverseYMessage* msg, uint8_t* payload);
 		void ParseFlipXY(FlipXYMessage* msg, uint8_t* payload);
-		void ParseTouch(TouchMessage* msg, uint8_t* payload, uint8_t i);
-		void Enqueue(Message* msg);
-		void ParseResponse(uint8_t* payload);
-		Message* Dequeue();
+		void ParseTouch(TouchMessage* msg, uint8_t* payload);
+		void ParseResponse(uint8_t* payload, Message** msg);
 		void ClearBuffer(uint8_t* buffer);
 		uint8_t buffer[MAX_PAYLOAD];
 		int dataReady;
-		std::deque<Message*> queue;
-		const int timeout = 1000;
 		volatile MessageType lastSentMessage;
 };
 

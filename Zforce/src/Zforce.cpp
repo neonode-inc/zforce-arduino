@@ -45,45 +45,14 @@ bool Zforce::Enable(bool isEnabled)
   bool failed = false;
 
   uint8_t enable[] = {0xEE, 0x0A, 0xEE, 0x08, 0x40, 0x02, 0x02, 0x00, 0x65, 0x02, (isEnabled ? 0x81 : 0x80), 0x00};
-  
-  if(GetDataReady() == HIGH)
-  {
-    Read(buffer);
-    VirtualParse(buffer);
-    ClearBuffer(buffer);
-  }
 
-  if (Write(enable))
+  if (Write(enable)) // We assume that the end user has called GetMessage prior to calling this method
   {
     failed = true;
   }
   else
   {
     lastSentMessage = MessageType::ENABLETYPE;
-  }
-
-  long ms = millis();
-  while(GetDataReady() == LOW)
-  {
-    if((millis() - ms) > timeout)
-    {
-      failed = true;
-      break;
-    }
-  }
-
-  if(!failed)
-  {
-    if(Read(buffer))
-    {
-      failed = true;
-    }
-  }
-
-  if(!failed)
-  {
-    VirtualParse(buffer);
-    ClearBuffer(buffer);
   }
 
   return !failed;
@@ -149,44 +118,13 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
                                0x82, 02, firstMaxX, secondMaxX,
                                0x83, 02, firstMaxY, secondMaxY};
 
-  if(GetDataReady() == HIGH)
-  {
-    Read(buffer);
-    VirtualParse(buffer);
-    ClearBuffer(buffer);
-  }
-
-  if (Write(touchActiveArea))
+  if (Write(touchActiveArea)) // We assume that the end user has called GetMessage prior to calling this method
   {
     failed = true;
   }
   else
   {
     lastSentMessage = MessageType::TOUCHACTIVEAREATYPE;
-  }
-
-  long ms = millis();
-  while(GetDataReady() == LOW)
-  {
-    if((millis() - ms) > timeout)
-    {
-      failed = true;
-      break;
-    }
-  }
-
-  if(!failed)
-  {
-    if(Read(buffer))
-    {
-      failed = true;
-    }
-  }
-
-  if(!failed)
-  {
-    VirtualParse(buffer);
-    ClearBuffer(buffer);
   }
 
   return !failed;
@@ -198,44 +136,13 @@ bool Zforce::FlipXY(bool isFlipped)
 
   uint8_t flipXY[] = {0xEE, 0x0D, 0xEE, 0x0B, 0x40, 0x02, 0x02, 0x00, 0x73, 0x05, 0xA2, 0x03, 0x86, 0x01, isFlipped ? 0xFF : 0x00};
 
-  if(GetDataReady() == HIGH)
-  {
-    Read(buffer);
-    VirtualParse(buffer);
-    ClearBuffer(buffer);
-  }
-
-  if (Write(flipXY))
+  if (Write(flipXY)) // We assume that the end user has called GetMessage prior to calling this method
   {
     failed = true;
   }
   else
   {
     lastSentMessage = MessageType::FLIPXYTYPE;
-  }
-
-  long ms = millis();
-  while(GetDataReady() == LOW)
-  {
-    if((millis() - ms) > timeout)
-    {
-      failed = true;
-      break;
-    }
-  }
-
-  if(!failed)
-  {
-    if(Read(buffer))
-    {
-      failed = true;
-    }
-  }
-
-  if(!failed)
-  {
-    VirtualParse(buffer);
-    ClearBuffer(buffer);
   }
 
   return !failed;
@@ -247,44 +154,13 @@ bool Zforce::ReverseX(bool isReversed)
 
   uint8_t reverseX[] = {0xEE, 0x0D, 0xEE, 0x0B, 0x40, 0x02, 0x02, 0x00, 0x73, 0x05, 0xA2, 0x03, 0x84, 0x01, isReversed ? 0xFF : 0x00};
 
-  if(GetDataReady() == HIGH)
-  {
-    Read(buffer);
-    VirtualParse(buffer);
-    ClearBuffer(buffer);
-  }
-
-  if (Write(reverseX))
+  if (Write(reverseX)) // We assume that the end user has called GetMessage prior to calling this method
   {
     failed = true;
   }
   else
   {
     lastSentMessage = MessageType::REVERSEXTYPE;
-  }
-
-  long ms = millis();
-  while(GetDataReady() == LOW)
-  {
-    if((millis() - ms) > timeout)
-    {
-      failed = true;
-      break;
-    }
-  }
-
-  if(!failed)
-  {
-    if(Read(buffer))
-    {
-      failed = true;
-    }
-  }
-
-  if(!failed)
-  {
-    VirtualParse(buffer);
-    ClearBuffer(buffer);
   }
 
   return !failed;
@@ -296,44 +172,13 @@ bool Zforce::ReverseY(bool isReversed)
 
   uint8_t reverseY[] = {0xEE, 0x0D, 0xEE, 0x0B, 0x40, 0x02, 0x02, 0x00, 0x73, 0x05, 0xA2, 0x03, 0x85, 0x01, isReversed ? 0xFF : 0x00};
 
-  if(GetDataReady() == HIGH)
-  {
-    Read(buffer);
-    VirtualParse(buffer);
-    ClearBuffer(buffer);
-  }
-
-  if (Write(reverseY))
+  if (Write(reverseY)) // We assume that the end user has called GetMessage prior to calling this method
   {
     failed = true;
   }
   else
   {
     lastSentMessage = MessageType::REVERSEYTYPE;
-  }
-
-  long ms = millis();
-  while(GetDataReady() == LOW)
-  {
-    if((millis() - ms) > timeout)
-    {
-      failed = true;
-      break;
-    }
-  }
-
-  if(!failed)
-  {
-    if(Read(buffer))
-    {
-      failed = true;
-    }
-  }
-
-  if(!failed)
-  {
-    VirtualParse(buffer);
-    ClearBuffer(buffer);
   }
 
   return !failed;
@@ -350,44 +195,13 @@ bool Zforce::ReportedTouches(uint8_t touches)
 
   uint8_t reportedTouches[] = {0xEE, 0x0B, 0xEE, 0x09, 0x40, 0x02, 0x02, 0x00, 0x73, 0x03, 0x86, 0x01, touches};
 
-  if(GetDataReady() == HIGH)
-  {
-    Read(buffer);
-    VirtualParse(buffer);
-    ClearBuffer(buffer);
-  }
-
-  if (Write(reportedTouches))
+  if (Write(reportedTouches)) // We assume that the end user has called GetMessage prior to calling this method
   {
     failed = true;
   }
   else
   {
     lastSentMessage = MessageType::REPORTEDTOUCHESTYPE;
-  }
-
-  long ms = millis();
-  while(GetDataReady() == LOW)
-  {
-    if((millis() - ms) > timeout)
-    {
-      failed = true;
-      break;
-    }
-  }
-
-  if(!failed)
-  {
-    if(Read(buffer))
-    {
-      failed = true;
-    }
-  }
-
-  if(!failed)
-  {
-    VirtualParse(buffer);
-    ClearBuffer(buffer);
   }
 
   return !failed;
@@ -401,16 +215,17 @@ int Zforce::GetDataReady()
 
 Message* Zforce::GetMessage()
 {
+  Message* msg = nullptr;
   if(GetDataReady() == HIGH)
   {
     if(!Read(buffer))
     {
-      VirtualParse(buffer);
+      msg = VirtualParse(buffer);
       ClearBuffer(buffer);
     }
   }
   
-  return Dequeue();
+  return msg;
 }
 
 void Zforce::DestroyMessage(Message* msg)
@@ -419,27 +234,29 @@ void Zforce::DestroyMessage(Message* msg)
   msg = nullptr;
 }
 
-void Zforce::VirtualParse(uint8_t* payload)
+Message* Zforce::VirtualParse(uint8_t* payload)
 {
+  Message* msg = nullptr;
+
   switch(payload[2]) // Check if the payload is a response to a request or if it's a notification.
   {
     case 0xEF:
     {
-      ParseResponse(payload);
+      ParseResponse(payload, &msg);
     }
     break;
     case 0xF0:
     {
       if (payload[8] == 0xA0) // Check the identifier if this is a touch message or something else.
       {
-        uint8_t touchCount = payload[9] / 11; // Calculate the amount of touch objects.
-        for (uint8_t i = 0; i < touchCount; i++)
-        {
-          TouchMessage* touch = new TouchMessage;
-          touch->type = MessageType::TOUCHTYPE;
-          ParseTouch(touch, payload, i);
-          Enqueue(touch);
-        }
+        msg = new TouchMessage;
+        msg->type = MessageType::TOUCHTYPE;
+        ParseTouch((TouchMessage*)msg, payload);
+      }
+      else if (payload[8] == 0x63)
+      {
+        msg = new Message;
+        msg->type = MessageType::BOOTCOMPLETETYPE;
       }
     }
     break;
@@ -448,61 +265,60 @@ void Zforce::VirtualParse(uint8_t* payload)
     break;
   }
   lastSentMessage = MessageType::NONE;
+  return msg;
 }
 
-void Zforce::ParseResponse(uint8_t* payload)
+void Zforce::ParseResponse(uint8_t* payload, Message** msg)
 {
   switch(lastSentMessage)
   {
     case MessageType::REVERSEYTYPE:
     {
-      ReverseYMessage* reverseY = new ReverseYMessage;
-      reverseY->type = MessageType::REVERSEYTYPE;
-      ParseReverseY(reverseY, payload);
-      Enqueue(reverseY);
+      (*(msg)) = new ReverseYMessage;
+      (*(msg))->type = MessageType::REVERSEYTYPE;
+      ParseReverseY((ReverseYMessage*)(*(msg)), payload);
     }
     break;
     case MessageType::ENABLETYPE:
     {
-      EnableMessage* enable = new EnableMessage;
-      enable->type = MessageType::ENABLETYPE;
-      ParseEnable(enable, payload);
-      Enqueue(enable);
+      (*(msg)) = new EnableMessage;
+      (*(msg))->type = MessageType::ENABLETYPE;
+      ParseEnable((EnableMessage*)(*(msg)), payload);
     }
     break;
     case MessageType::TOUCHACTIVEAREATYPE:
     {
-      TouchActiveAreaMessage* touchActiveArea = new TouchActiveAreaMessage;
-      touchActiveArea->type = MessageType::TOUCHACTIVEAREATYPE;
-      ParseTouchActiveArea(touchActiveArea, payload);
-      Enqueue(touchActiveArea);
+      (*(msg)) = new TouchActiveAreaMessage;
+      (*(msg))->type = MessageType::TOUCHACTIVEAREATYPE;
+      ParseTouchActiveArea((TouchActiveAreaMessage*)(*(msg)), payload);
     }
     break;
     case MessageType::REVERSEXTYPE:
     {
-      ReverseXMessage* reverseX = new ReverseXMessage;
-      reverseX->type = MessageType::REVERSEXTYPE;
-      ParseReverseX(reverseX, payload);
-      Enqueue(reverseX);
+      (*(msg)) = new ReverseXMessage;
+      (*(msg))->type = MessageType::REVERSEXTYPE;
+      ParseReverseX((ReverseXMessage*)(*(msg)), payload);
     }
     break;
     case MessageType::FLIPXYTYPE:
     {
-      FlipXYMessage* flipXY = new FlipXYMessage;
-      flipXY->type = MessageType::FLIPXYTYPE;
-      ParseFlipXY(flipXY, payload);
-      Enqueue(flipXY);
+      (*(msg)) = new FlipXYMessage;
+      (*(msg))->type = MessageType::FLIPXYTYPE;
+      ParseFlipXY((FlipXYMessage*)(*(msg)), payload);
     }
     break;
     case MessageType::REPORTEDTOUCHESTYPE:
     {
-      ReportedTouchesMessage* reportedTouches = new ReportedTouchesMessage;
-      reportedTouches->type = MessageType::REPORTEDTOUCHESTYPE;
-      ParseReportedTouches(reportedTouches, payload);
-      Enqueue(reportedTouches);
+      (*(msg)) = new ReportedTouchesMessage;
+      (*(msg))->type = MessageType::REPORTEDTOUCHESTYPE;
+      ParseReportedTouches((ReportedTouchesMessage*)(*(msg)), payload);
     }
     break;
     default:
+    {
+      (*(msg)) = new Message;
+      (*(msg))->type = MessageType::NONE;
+    }
     break;
   }
 }
@@ -647,57 +463,21 @@ void Zforce::ParseFlipXY(FlipXYMessage* msg, uint8_t* payload)
   }
 }
 
-void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload, uint8_t i)
+void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload)
 {
-  msg->id = payload[12 + (i * 11)];
-  msg->event = (TouchEvent)(payload[13 + (i * 11)]);
-  msg->x = payload[14 + (i * 11)] << 8;
-  msg->x |= payload[15 + (i * 11)];
-  msg->y = payload[16 + (i * 11)] << 8;
-  msg->y |= payload[17 + (i * 11)];
-}
+  msg->touchCount = payload[9] / 11; // Calculate the amount of touch objects.
+  msg->touchData = new TouchData[msg->touchCount];
 
-void Zforce::Enqueue(Message* msg)
-{
-  queue.push_back(msg);
-}
-
-Message* Zforce::Dequeue()
-{
-  Message* message = nullptr;
-
-  if(!queue.empty())
+  for(uint8_t i = 0; i < msg->touchCount; i++)
   {
-    for(uint8_t i = 0; i < queue.size(); i++)
-    {
-      if(queue.at(i)->type != MessageType::TOUCHTYPE)
-      {
-        message = queue.at(i);
-        queue.erase(queue.begin() + i);
-        break;
-      }
-    }
-
-    if(nullptr == message)
-    {
-      message = queue.front();
-      queue.pop_front();
-    }
-
+    msg->touchData[i].id = payload[12 + (i * 11)];
+    msg->touchData[i].event = (TouchEvent)(payload[13 + (i * 11)]);
+    msg->touchData[i].x = payload[14 + (i * 11)] << 8;
+    msg->touchData[i].x |= payload[15 + (i * 11)];
+    msg->touchData[i].y = payload[16 + (i * 11)] << 8;
+    msg->touchData[i].y |= payload[17 + (i * 11)];
   }
 
-
-
-  /* TODO Requirements for our own made queue
-
-  1. Need to know if queue is empty or not
-  2. Need to be able to access individual objects in queue
-  3. Need push
-  4. Need pop
-
-  */
-
-  return message;
 }
 
 void Zforce::ClearBuffer(uint8_t* buffer)
