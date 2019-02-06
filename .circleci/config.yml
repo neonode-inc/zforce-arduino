@@ -1,0 +1,24 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: suculent/arduino-docker-build@sha256:74b4c95da9285e16b628c2d480bd3797621eb8aa36c9fc2b89c3aae185afa22d
+    steps:
+      - checkout
+      - run:
+          name: Run arduino
+          command: |
+            export PATH=/opt/arduino:$PATH
+            mkdir -p ~/Arduino/libraries
+            ln -s -r -f Zforce ~/Arduino/libraries/
+            arduino --pref build.path=build --verify Zforce/example/zForceLibraryExampleCode/zForceLibraryExampleCode.ino -v
+            ls -l build
+      - store_artifacts:
+          path: build/zForceLibraryExampleCode.ino.hex
+          destination: example.hex
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build
