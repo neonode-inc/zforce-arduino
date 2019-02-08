@@ -115,16 +115,17 @@ void loop()
   {
 	  if(touch->type == MessageType::TOUCHTYPE)
 	  {
-		for (uint8_t i = 0; i < ((TouchMessage*)touch)->touchCount; i++)
-		{
-		  Serial.print("X is: ");
-		  Serial.println(((TouchMessage*)touch)->touchData[i].x);
-		  Serial.print("Y is: ");
-		  Serial.println(((TouchMessage*)touch)->touchData[i].y);
-		  Serial.print("ID is: ");
-		  Serial.println(((TouchMessage*)touch)->touchData[i].id);
-		}
+  		for (uint8_t i = 0; i < ((TouchMessage*)touch)->touchCount; i++)
+  		{
+  		  Serial.print("X is: ");
+  		  Serial.println(((TouchMessage*)touch)->touchData[i].x);
+  		  Serial.print("Y is: ");
+  		  Serial.println(((TouchMessage*)touch)->touchData[i].y);
+  		  Serial.print("ID is: ");
+  		  Serial.println(((TouchMessage*)touch)->touchData[i].id);
+  		}
 	  }
+
     zforce.DestroyMessage(touch);
   }
 }
