@@ -282,6 +282,7 @@ Message* Zforce::VirtualParse(uint8_t* payload)
     default:
     break;
   }
+  
   lastSentMessage = MessageType::NONE;
   return msg;
 }
