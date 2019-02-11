@@ -35,13 +35,13 @@ void Zforce::Start(int dr)
 int Zforce::Read(uint8_t * payload)
 {
   int status = 0;
-  
+
   status = I2c.read(ZFORCE_I2C_ADDRESS, 2);
 
   // Read the 2 I2C header bytes.
   payload[0] = I2c.receive();
   payload[1] = I2c.receive();
-  
+
   status = I2c.read(ZFORCE_I2C_ADDRESS, payload[1], &payload[2]);
 
   return status; // return 0 if success, otherwise error code according to Atmel Data Sheet
@@ -62,7 +62,7 @@ bool Zforce::Enable(bool isEnabled)
 {
   bool failed = false;
 
-  uint8_t enable[] = {0xEE, 0x0A, 0xEE, 0x08, 0x40, 0x02, 0x02, 0x00, 0x65, 0x02, (isEnabled ? 0x81 : 0x80), 0x00};
+  uint8_t enable[] = {0xEE, 0x0A, 0xEE, 0x08, 0x40, 0x02, 0x02, 0x00, 0x65, 0x02, (uint8_t)(isEnabled ? 0x81 : 0x80), 0x00};
 
   if (Write(enable)) // We assume that the end user has called GetMessage prior to calling this method
   {
@@ -82,59 +82,12 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
 
   const uint8_t length = 16;
 
-  uint8_t firstMinX, secondMinX, firstMinY, secondMinY, firstMaxX, secondMaxX, firstMaxY, secondMaxY;
-
-  if (minX > 255)
-  {
-    firstMinX = minX >> 8;
-    secondMinX |= minX;
-  }
-  else
-  {
-    firstMinX = 0;
-    secondMinX = minX;
-  }
-
-  if (minY > 255)
-  {
-    firstMinY = minY >> 8;
-    secondMinY |= minY;
-  }
-  else
-  {
-    firstMinY = 0;
-    secondMinY = minY;
-  }
-
-  if (maxX > 255)
-  {
-    firstMaxX = maxX >> 8;
-    secondMaxX |= maxX;
-  }
-  else
-  {
-    firstMaxX = 0;
-    secondMaxX = maxX;
-  }
-
-  if (maxY > 255)
-  {
-    firstMaxY = maxY >> 8;
-    secondMaxY |= maxY;
-  }
-  else
-  {
-    firstMaxY = 0;
-    secondMaxY = maxY;
-  }
-
-
   uint8_t touchActiveArea[] = {0xEE, length + 10, 0xEE, length + 8,
-                               0x40, 0x02, 0x02, 0x00, 0x73, length + 2, 0xA2, length, 
-                               0x80, 02, firstMinX, secondMinX,
-                               0x81, 02, firstMinY, secondMinY,
-                               0x82, 02, firstMaxX, secondMaxX,
-                               0x83, 02, firstMaxY, secondMaxY};
+                               0x40, 0x02, 0x02, 0x00, 0x73, length + 2, 0xA2, length,
+                               0x80, 02, (uint8_t)(minX >> 8), (uint8_t)(minX & 0xFF),
+                               0x81, 02, (uint8_t)(minY >> 8), (uint8_t)(minY & 0xFF),
+                               0x82, 02, (uint8_t)(maxX >> 8), (uint8_t)(maxX & 0xFF),
+                               0x83, 02, (uint8_t)(maxY >> 8), (uint8_t)(maxY & 0xFF)};
 
   if (Write(touchActiveArea)) // We assume that the end user has called GetMessage prior to calling this method
   {
@@ -152,7 +105,7 @@ bool Zforce::FlipXY(bool isFlipped)
 {
   bool failed = false;
 
-  uint8_t flipXY[] = {0xEE, 0x0D, 0xEE, 0x0B, 0x40, 0x02, 0x02, 0x00, 0x73, 0x05, 0xA2, 0x03, 0x86, 0x01, isFlipped ? 0xFF : 0x00};
+  uint8_t flipXY[] = {0xEE, 0x0D, 0xEE, 0x0B, 0x40, 0x02, 0x02, 0x00, 0x73, 0x05, 0xA2, 0x03, 0x86, 0x01, (uint8_t)(isFlipped ? 0xFF : 0x00)};
 
   if (Write(flipXY)) // We assume that the end user has called GetMessage prior to calling this method
   {
@@ -170,7 +123,7 @@ bool Zforce::ReverseX(bool isReversed)
 {
   bool failed = false;
 
-  uint8_t reverseX[] = {0xEE, 0x0D, 0xEE, 0x0B, 0x40, 0x02, 0x02, 0x00, 0x73, 0x05, 0xA2, 0x03, 0x84, 0x01, isReversed ? 0xFF : 0x00};
+  uint8_t reverseX[] = {0xEE, 0x0D, 0xEE, 0x0B, 0x40, 0x02, 0x02, 0x00, 0x73, 0x05, 0xA2, 0x03, 0x84, 0x01, (uint8_t)(isReversed ? 0xFF : 0x00)};
 
   if (Write(reverseX)) // We assume that the end user has called GetMessage prior to calling this method
   {
@@ -188,7 +141,7 @@ bool Zforce::ReverseY(bool isReversed)
 {
   bool failed = false;
 
-  uint8_t reverseY[] = {0xEE, 0x0D, 0xEE, 0x0B, 0x40, 0x02, 0x02, 0x00, 0x73, 0x05, 0xA2, 0x03, 0x85, 0x01, isReversed ? 0xFF : 0x00};
+  uint8_t reverseY[] = {0xEE, 0x0D, 0xEE, 0x0B, 0x40, 0x02, 0x02, 0x00, 0x73, 0x05, 0xA2, 0x03, 0x85, 0x01, (uint8_t)(isReversed ? 0xFF : 0x00)};
 
   if (Write(reverseY)) // We assume that the end user has called GetMessage prior to calling this method
   {
@@ -242,7 +195,7 @@ Message* Zforce::GetMessage()
       ClearBuffer(buffer);
     }
   }
-  
+
   return msg;
 }
 
@@ -282,7 +235,7 @@ Message* Zforce::VirtualParse(uint8_t* payload)
     default:
     break;
   }
-  
+
   lastSentMessage = MessageType::NONE;
   return msg;
 }
@@ -501,7 +454,7 @@ void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload)
 
 void Zforce::ClearBuffer(uint8_t* buffer)
 {
-  memset(buffer, 0, sizeof(buffer));
+  memset(buffer, 0, MAX_PAYLOAD);
 }
 
 Zforce zforce = Zforce();
