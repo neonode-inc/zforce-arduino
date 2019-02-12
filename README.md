@@ -4,7 +4,72 @@ An Arduino library for communicating with the [Neonode zForce Air Module] optica
 
 [Neonode zForce Air Module]: https://www.digikey.com/short/p3374r
 
+# Introduction
+The library offers an easy way to communicate with the sensor as well as some primitive parsing of the ASN.1 serialized messages. This makes it easy to get x and y coordinates from touch notifications or set different settings in the sensor. The library does not have support for all messages available in the ASN.1 protocol, however the I2C read and write functions are public and can be used if any additional settings or requests need to be sent/read from the sensor.
+
+# How to use the library
+
+## Main Loop
+The library is built around using zforce.GetMessage() as the main loop for reading messages from the sensor. GetMessage checks if the data ready pin is high and if it is, the function zforce.Read() will be called. The read function takes a buffer parameter which is used to store the data from the sensor.
+```C++
+Message* Zforce::GetMessage()
+{
+  Message* msg = nullptr;
+  if(GetDataReady() == HIGH)
+  {
+    if(!Read(buffer))
+    {
+      msg = VirtualParse(buffer);
+      ClearBuffer(buffer);
+    }
+  }
+   
+  return msg;
+}
+```
+When GetMessage has been called it is up to the end user to destroy the message by calling zforce.DestroyMessage() and passing the message pointer as a parameter.
+
+## Send and Read Messages
+The library has support for some basic settings in the sensor, for example zforce.SetTouchActiveArea(). When writing a message to the sensor the end user has to make sure that data ready is not high before writing. This is done by calling GetMessage and reading whatever might be in the I2C buffer.
+
+When a message has been sent, the sensor always creates a response that has to be read by the host. It could take some time for the sensor to create the response and put it on the I2C buffer, which is why it is recommended to call the GetMessage function in a do while loop after sending a request.
+```C++
+// Make sure that there is nothing in the I2C buffer before writing to the sensor
+Message* msg = zforce.GetMessage();
+if(msg != NULL)
+{
+  // Here you can read whatever is in the message or just destroy it.
+  zforce.DestroyMessage(msg);
+}
+ 
+// Send and read Touch Active Area
+zforce.TouchActiveArea(50,50,2000,4000);
+ 
+// Wait for the response to arrive
+do
+{
+  msg = zforce.GetMessage();
+} while (msg == NULL);
+ 
+// See what the response contains
+if(msg->type == MessageType::TOUCHACTIVEAREATYPE)
+{
+  Serial.print("minX is: ");
+  Serial.println(((TouchActiveAreaMessage*)msg)->minX);
+  Serial.print("minY is: ");
+  Serial.println(((TouchActiveAreaMessage*)msg)->minY);
+  Serial.print("maxX is: ");
+  Serial.println(((TouchActiveAreaMessage*)msg)->maxX);
+  Serial.print("maxY is: ");
+  Serial.println(((TouchActiveAreaMessage*)msg)->maxY);
+}
+ 
+zforce.DestroyMessage(msg);
+```
+
 # Method Overview
+
+
 ## Public Methods
 
 | Data Type   | Method          | Parameter                                               | Description                                                                                                                                                                                      | Return                                                                                   |
@@ -24,6 +89,7 @@ An Arduino library for communicating with the [Neonode zForce Air Module] optica
 | void        | DestroyMessage  | Message* msg                                            | Deletes the passed message pointer and sets it to null.                                                                                                                                          | N/A                                                                                      |
 
 ## Private Methods
+
 | Data Type | Method               | Parameter                                    | Description                                                                                                                                              | Return             |
 |-----------|----------------------|----------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|
 | Message*  | VirtualParse         | uint8_t* payload                             | Checks if the payload contains a response or if it contains a notification and calls the appropriate method to parse the payload and populate a message. | A message pointer. |
