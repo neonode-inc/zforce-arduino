@@ -42,7 +42,7 @@ if(msg != NULL)
   zforce.DestroyMessage(msg);
 }
  
-// Send the Touch Active Area message
+// Send the Touch Active Area request
 zforce.TouchActiveArea(50,50,2000,4000);
  
 // Wait for the response to arrive
