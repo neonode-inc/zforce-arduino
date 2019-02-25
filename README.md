@@ -7,6 +7,9 @@ An Arduino library for communicating with the [Neonode zForce Air Module] optica
 # Introduction
 The library offers an easy way to communicate with the sensor as well as some primitive parsing of the ASN.1 serialized messages. This makes it easy to get x and y coordinates from touch notifications or set different settings in the sensor. The library does not have support for all messages available in the ASN.1 protocol, however the I2C read and write functions are public and can be used if any additional settings or requests need to be sent/read from the sensor.
 
+# Support Questions
+For support questions please submit a request to [our helpcenter](https://helpcenter.neonode.com/hc/en-us/requests/new).
+
 # How to use the library
 
 ## Main Loop
