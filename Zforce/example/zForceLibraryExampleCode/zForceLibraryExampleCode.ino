@@ -28,32 +28,14 @@ void setup()
 
   if(msg != NULL)
   {
+    Serial.println("Received Boot Complete Notification");
     Serial.print("Message type is: ");
     Serial.println((int)msg->type);
     zforce.DestroyMessage(msg);
   }
 
-  // Send and read Enable
-
-  zforce.Enable(true);
-
-  msg = zforce.GetMessage();
-
-  do
-  {
-    msg = zforce.GetMessage();
-  } while (msg == NULL);
-
-  if(msg->type == MessageType::ENABLETYPE)
-  {
-    Serial.print("Message type is: ");
-    Serial.println((int)msg->type);
-  }
-  
-  zforce.DestroyMessage(msg);
-
   // Send and read ReverseX
-  zforce.ReverseX(true);
+  zforce.ReverseX(false);
 
   do
   {
@@ -62,6 +44,7 @@ void setup()
 
   if(msg->type == MessageType::REVERSEXTYPE)
   {
+    Serial.println("Received ReverseX Response");
     Serial.print("Message type is: ");
     Serial.println((int)msg->type);
   }
@@ -79,6 +62,7 @@ void setup()
 
   if(msg->type == MessageType::REVERSEYTYPE)
   {
+    Serial.println("Received ReverseY Response");
     Serial.print("Message type is: ");
     Serial.println((int)msg->type);
   }
@@ -86,7 +70,7 @@ void setup()
   zforce.DestroyMessage(msg);
 
   // Send and read Touch Active Area
-  zforce.TouchActiveArea(50,50,2000,4000);
+  zforce.TouchActiveArea(0,0,4000,4000);
 
   do
   {
@@ -103,6 +87,26 @@ void setup()
     Serial.println(((TouchActiveAreaMessage*)msg)->maxX);
     Serial.print("maxY is: ");
     Serial.println(((TouchActiveAreaMessage*)msg)->maxY);
+  }
+  
+  zforce.DestroyMessage(msg);
+
+  // Send and read Enable
+
+  zforce.Enable(true);
+
+  msg = zforce.GetMessage();
+
+  do
+  {
+    msg = zforce.GetMessage();
+  } while (msg == NULL);
+
+  if(msg->type == MessageType::ENABLETYPE)
+  {
+    Serial.print("Message type is: ");
+    Serial.println((int)msg->type);
+    Serial.println("Sensor is now enabled and will report touches.");
   }
   
   zforce.DestroyMessage(msg);
@@ -123,6 +127,8 @@ void loop()
   		  Serial.println(((TouchMessage*)touch)->touchData[i].y);
   		  Serial.print("ID is: ");
   		  Serial.println(((TouchMessage*)touch)->touchData[i].id);
+        Serial.print("Event is: ");
+  		  Serial.println(((TouchMessage*)touch)->touchData[i].event);
   		}
 	  }
 
