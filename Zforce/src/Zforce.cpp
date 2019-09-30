@@ -52,7 +52,7 @@ int Zforce::Read(uint8_t * payload)
  */
 int Zforce::Write(uint8_t* payload)
 {
-  int len = payload[1] + 2;
+  int len = payload[1] + 1;
   int status = I2c.write(ZFORCE_I2C_ADDRESS, payload[0], &payload[1], len);
 
   return status; // return 0 if success, otherwise error code according to Atmel Data Sheet
