@@ -1,0 +1,46 @@
+#######################################
+# Syntax Coloring Map For Zforce
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+MessageType	KEYWORD1
+TouchEvent	KEYWORD1
+TouchData	KEYWORD1
+Message	KEYWORD1
+TouchMessage	KEYWORD1
+EnableMessage	KEYWORD1
+TouchActiveAreaMessage	KEYWORD1
+FlipXYMessage	KEYWORD1
+ReverseXMessage	KEYWORD1
+ReverseYMessage	KEYWORD1
+ReportedTouchesMessage	KEYWORD1
+Zforce	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+Start	KEYWORD2
+Read	KEYWORD2
+Write	KEYWORD2
+Enable	KEYWORD2
+TouchActiveArea	KEYWORD2
+FlipXY	KEYWORD2
+ReverseX	KEYWORD2
+ReverseY	KEYWORD2
+ReportedTouches	KEYWORD2
+GetDataReady	KEYWORD2
+GetMessage	KEYWORD2
+DestroyMessage	KEYWORD2
+
+#######################################
+# Instances (KEYWORD2)
+#######################################
+
+zforce	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
