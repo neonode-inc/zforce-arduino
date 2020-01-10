@@ -10,11 +10,9 @@ jobs:
           name: Run arduino
           command: |
             export PATH=/opt/arduino:$PATH
-            mkdir -p ~/Arduino/libraries/Zforce
+            mkdir -p ~/Arduino/libraries/
             #ln -s -r -f Zforce ~/Arduino/libraries/Zforce
-            ls -l
-            ls -l zforce-arduino
-            arduino --pref build.path=build --verify zforce-arduino/example/zForceLibraryExampleCode/zForceLibraryExampleCode.ino -v
+            arduino --pref build.path=build --verify example/zForceLibraryExampleCode/zForceLibraryExampleCode.ino -v
             ls -l build
       - store_artifacts:
           path: build/zForceLibraryExampleCode.ino.hex
