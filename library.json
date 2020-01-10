@@ -1,12 +1,12 @@
 {
   "name": "zForceAirLibrary",
-  "keywords": "zForce AIR",
+  "keywords": "zForce AIR, zForce, neonode, air, touch, sensor",
   "description": "A library to communicate with the zForce AIR Sensor over I2C.",
   "homepage": "https://support.neonode.com/docs/",
   "repository":
   {
-    "type": "*",
-    "url": "*"
+    "type": "git",
+    "url": "https://github.com/neonode-inc/zforce-arduino"
   },
   "version": "1.0.0",
   "frameworks": "arduino",
