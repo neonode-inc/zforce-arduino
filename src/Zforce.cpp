@@ -19,10 +19,10 @@
 
 
 #include <string.h>
-#if USE_I2C_LIB == 1
-  #include "../include/I2C/I2C.h"
-#else
-  #include <inttypes.h>
+#include <inttypes.h>
+#include "I2C/I2C.h"
+#include "Zforce.h"
+#if USE_I2C_LIB == 0
   #include <Wire.h>
   #if(ARDUINO >= 100)
     #include <Arduino.h>
@@ -30,7 +30,6 @@
     #include <WProgram.h>
   #endif
 #endif
-#include "Zforce.h"
 
 Zforce::Zforce()
 {

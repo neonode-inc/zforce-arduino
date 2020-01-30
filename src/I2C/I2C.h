@@ -53,6 +53,15 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+
+#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega8__) || defined(__AVR_ATmega328P__) || defined(__AVR_ATmega128__)
+#define USE_I2C_LIB 1
+#else
+#define USE_I2C_LIB 0
+#endif
+
+#if USE_I2C_LIB
+
 #if(ARDUINO >= 100)
 #include <Arduino.h>
 #else
@@ -132,4 +141,5 @@ class I2C
 
 extern I2C I2c;
 
+#endif
 #endif
