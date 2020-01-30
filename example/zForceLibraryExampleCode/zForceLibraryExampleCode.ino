@@ -128,7 +128,6 @@ void loop()
     {
       for (uint8_t i = 0; i < ((TouchMessage*)touch)->touchCount; i++)
       {
-<<<<<<< Updated upstream
         Serial.print("X is: ");
         Serial.println(((TouchMessage*)touch)->touchData[i].x);
         Serial.print("Y is: ");
@@ -137,16 +136,6 @@ void loop()
         Serial.println(((TouchMessage*)touch)->touchData[i].id);
         Serial.print("Event is: ");
         Serial.println(((TouchMessage*)touch)->touchData[i].event);
-=======
-        Serial.print("X is: ");
-        Serial.println(((TouchMessage*)touch)->touchData[i].x);
-        Serial.print("Y is: ");
-        Serial.println(((TouchMessage*)touch)->touchData[i].y);
-        Serial.print("ID is: ");
-        Serial.println(((TouchMessage*)touch)->touchData[i].id);
-        Serial.print("Event is: ");
-        Serial.println(((TouchMessage*)touch)->touchData[i].event);
->>>>>>> Stashed changes
       }
     }
 
