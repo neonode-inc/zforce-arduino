@@ -19,21 +19,25 @@
 #include <Zforce.h>
 #define DATA_READY 4
 
+/*
+ * If you are using a SAMD board, uncomment the define below in order to print to the serial monitor.
+ */
+// #define Serial SerialUSB
 
 void setup()
 {
-  SerialUSB.begin(115200);
-  while(!SerialUSB){};
-  SerialUSB.println("zforce start");
+  Serial.begin(115200);
+  while(!Serial){};
+  Serial.println("zforce start");
   zforce.Start(DATA_READY);
   
   Message* msg = zforce.GetMessage();
 
   if (msg != NULL)
   {
-    SerialUSB.println("Received Boot Complete Notification");
-    SerialUSB.print("Message type is: ");
-    SerialUSB.println((int)msg->type);
+    Serial.println("Received Boot Complete Notification");
+    Serial.print("Message type is: ");
+    Serial.println((int)msg->type);
     zforce.DestroyMessage(msg);
   }
 
@@ -47,9 +51,9 @@ void setup()
 
   if (msg->type == MessageType::REVERSEXTYPE)
   {
-    SerialUSB.println("Received ReverseX Response");
-    SerialUSB.print("Message type is: ");
-    SerialUSB.println((int)msg->type);
+    Serial.println("Received ReverseX Response");
+    Serial.print("Message type is: ");
+    Serial.println((int)msg->type);
   }
 
   zforce.DestroyMessage(msg);
@@ -65,9 +69,9 @@ void setup()
 
   if (msg->type == MessageType::REVERSEYTYPE)
   {
-    SerialUSB.println("Received ReverseY Response");
-    SerialUSB.print("Message type is: ");
-    SerialUSB.println((int)msg->type);
+    Serial.println("Received ReverseY Response");
+    Serial.print("Message type is: ");
+    Serial.println((int)msg->type);
   }
 
   zforce.DestroyMessage(msg);
@@ -82,14 +86,14 @@ void setup()
 
   if (msg->type == MessageType::TOUCHACTIVEAREATYPE)
   {
-    SerialUSB.print("minX is: ");
-    SerialUSB.println(((TouchActiveAreaMessage*)msg)->minX);
-    SerialUSB.print("minY is: ");
-    SerialUSB.println(((TouchActiveAreaMessage*)msg)->minY);
-    SerialUSB.print("maxX is: ");
-    SerialUSB.println(((TouchActiveAreaMessage*)msg)->maxX);
-    SerialUSB.print("maxY is: ");
-    SerialUSB.println(((TouchActiveAreaMessage*)msg)->maxY);
+    Serial.print("minX is: ");
+    Serial.println(((TouchActiveAreaMessage*)msg)->minX);
+    Serial.print("minY is: ");
+    Serial.println(((TouchActiveAreaMessage*)msg)->minY);
+    Serial.print("maxX is: ");
+    Serial.println(((TouchActiveAreaMessage*)msg)->maxX);
+    Serial.print("maxY is: ");
+    Serial.println(((TouchActiveAreaMessage*)msg)->maxY);
   }
 
   zforce.DestroyMessage(msg);
@@ -107,9 +111,9 @@ void setup()
 
   if (msg->type == MessageType::ENABLETYPE)
   {
-    SerialUSB.print("Message type is: ");
-    SerialUSB.println((int)msg->type);
-    SerialUSB.println("Sensor is now enabled and will report touches.");
+    Serial.print("Message type is: ");
+    Serial.println((int)msg->type);
+    Serial.println("Sensor is now enabled and will report touches.");
   }
 
   zforce.DestroyMessage(msg);
@@ -124,14 +128,25 @@ void loop()
     {
       for (uint8_t i = 0; i < ((TouchMessage*)touch)->touchCount; i++)
       {
-        SerialUSB.print("X is: ");
-        SerialUSB.println(((TouchMessage*)touch)->touchData[i].x);
-        SerialUSB.print("Y is: ");
-        SerialUSB.println(((TouchMessage*)touch)->touchData[i].y);
-        SerialUSB.print("ID is: ");
-        SerialUSB.println(((TouchMessage*)touch)->touchData[i].id);
-        SerialUSB.print("Event is: ");
-        SerialUSB.println(((TouchMessage*)touch)->touchData[i].event);
+<<<<<<< Updated upstream
+        Serial.print("X is: ");
+        Serial.println(((TouchMessage*)touch)->touchData[i].x);
+        Serial.print("Y is: ");
+        Serial.println(((TouchMessage*)touch)->touchData[i].y);
+        Serial.print("ID is: ");
+        Serial.println(((TouchMessage*)touch)->touchData[i].id);
+        Serial.print("Event is: ");
+        Serial.println(((TouchMessage*)touch)->touchData[i].event);
+=======
+        Serial.print("X is: ");
+        Serial.println(((TouchMessage*)touch)->touchData[i].x);
+        Serial.print("Y is: ");
+        Serial.println(((TouchMessage*)touch)->touchData[i].y);
+        Serial.print("ID is: ");
+        Serial.println(((TouchMessage*)touch)->touchData[i].id);
+        Serial.print("Event is: ");
+        Serial.println(((TouchMessage*)touch)->touchData[i].event);
+>>>>>>> Stashed changes
       }
     }
 
