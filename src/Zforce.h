@@ -21,6 +21,16 @@
 #define MAX_PAYLOAD 127
 #define ZFORCE_I2C_ADDRESS 0x50
 
+#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega8__) || defined(__AVR_ATmega328P__) || defined(__AVR_ATmega128__)
+#define USE_I2C_LIB 1
+#endif
+
+#ifndef USE_I2C_LIB
+#define USE_I2C_LIB 0
+#endif
+
+
+
 enum TouchEvent
 {
 	DOWN = 0,

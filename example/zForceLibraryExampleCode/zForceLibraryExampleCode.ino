@@ -17,20 +17,23 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include <Zforce.h>
-#define DATA_READY 13
+#define DATA_READY 4
 
-void setup() 
-{  
-  Serial.begin(115200);
+
+void setup()
+{
+  SerialUSB.begin(115200);
+  while(!SerialUSB){};
+  SerialUSB.println("zforce start");
   zforce.Start(DATA_READY);
-
+  
   Message* msg = zforce.GetMessage();
 
-  if(msg != NULL)
+  if (msg != NULL)
   {
-    Serial.println("Received Boot Complete Notification");
-    Serial.print("Message type is: ");
-    Serial.println((int)msg->type);
+    SerialUSB.println("Received Boot Complete Notification");
+    SerialUSB.print("Message type is: ");
+    SerialUSB.println((int)msg->type);
     zforce.DestroyMessage(msg);
   }
 
@@ -42,13 +45,13 @@ void setup()
     msg = zforce.GetMessage();
   } while (msg == NULL);
 
-  if(msg->type == MessageType::REVERSEXTYPE)
+  if (msg->type == MessageType::REVERSEXTYPE)
   {
-    Serial.println("Received ReverseX Response");
-    Serial.print("Message type is: ");
-    Serial.println((int)msg->type);
+    SerialUSB.println("Received ReverseX Response");
+    SerialUSB.print("Message type is: ");
+    SerialUSB.println((int)msg->type);
   }
-  
+
   zforce.DestroyMessage(msg);
 
 
@@ -60,35 +63,35 @@ void setup()
     msg = zforce.GetMessage();
   } while (msg == NULL);
 
-  if(msg->type == MessageType::REVERSEYTYPE)
+  if (msg->type == MessageType::REVERSEYTYPE)
   {
-    Serial.println("Received ReverseY Response");
-    Serial.print("Message type is: ");
-    Serial.println((int)msg->type);
+    SerialUSB.println("Received ReverseY Response");
+    SerialUSB.print("Message type is: ");
+    SerialUSB.println((int)msg->type);
   }
 
   zforce.DestroyMessage(msg);
 
   // Send and read Touch Active Area
-  zforce.TouchActiveArea(0,0,4000,4000);
+  zforce.TouchActiveArea(0, 0, 4000, 4000);
 
   do
   {
     msg = zforce.GetMessage();
   } while (msg == NULL);
 
-  if(msg->type == MessageType::TOUCHACTIVEAREATYPE)
+  if (msg->type == MessageType::TOUCHACTIVEAREATYPE)
   {
-    Serial.print("minX is: ");
-    Serial.println(((TouchActiveAreaMessage*)msg)->minX);
-    Serial.print("minY is: ");
-    Serial.println(((TouchActiveAreaMessage*)msg)->minY);
-    Serial.print("maxX is: ");
-    Serial.println(((TouchActiveAreaMessage*)msg)->maxX);
-    Serial.print("maxY is: ");
-    Serial.println(((TouchActiveAreaMessage*)msg)->maxY);
+    SerialUSB.print("minX is: ");
+    SerialUSB.println(((TouchActiveAreaMessage*)msg)->minX);
+    SerialUSB.print("minY is: ");
+    SerialUSB.println(((TouchActiveAreaMessage*)msg)->minY);
+    SerialUSB.print("maxX is: ");
+    SerialUSB.println(((TouchActiveAreaMessage*)msg)->maxX);
+    SerialUSB.print("maxY is: ");
+    SerialUSB.println(((TouchActiveAreaMessage*)msg)->maxY);
   }
-  
+
   zforce.DestroyMessage(msg);
 
   // Send and read Enable
@@ -102,35 +105,35 @@ void setup()
     msg = zforce.GetMessage();
   } while (msg == NULL);
 
-  if(msg->type == MessageType::ENABLETYPE)
+  if (msg->type == MessageType::ENABLETYPE)
   {
-    Serial.print("Message type is: ");
-    Serial.println((int)msg->type);
-    Serial.println("Sensor is now enabled and will report touches.");
+    SerialUSB.print("Message type is: ");
+    SerialUSB.println((int)msg->type);
+    SerialUSB.println("Sensor is now enabled and will report touches.");
   }
-  
+
   zforce.DestroyMessage(msg);
 }
 
-void loop() 
+void loop()
 {
   Message* touch = zforce.GetMessage();
-  if(touch != NULL)
+  if (touch != NULL)
   {
-	  if(touch->type == MessageType::TOUCHTYPE)
-	  {
-  		for (uint8_t i = 0; i < ((TouchMessage*)touch)->touchCount; i++)
-  		{
-  		  Serial.print("X is: ");
-  		  Serial.println(((TouchMessage*)touch)->touchData[i].x);
-  		  Serial.print("Y is: ");
-  		  Serial.println(((TouchMessage*)touch)->touchData[i].y);
-  		  Serial.print("ID is: ");
-  		  Serial.println(((TouchMessage*)touch)->touchData[i].id);
-        Serial.print("Event is: ");
-  		  Serial.println(((TouchMessage*)touch)->touchData[i].event);
-  		}
-	  }
+    if (touch->type == MessageType::TOUCHTYPE)
+    {
+      for (uint8_t i = 0; i < ((TouchMessage*)touch)->touchCount; i++)
+      {
+        SerialUSB.print("X is: ");
+        SerialUSB.println(((TouchMessage*)touch)->touchData[i].x);
+        SerialUSB.print("Y is: ");
+        SerialUSB.println(((TouchMessage*)touch)->touchData[i].y);
+        SerialUSB.print("ID is: ");
+        SerialUSB.println(((TouchMessage*)touch)->touchData[i].id);
+        SerialUSB.print("Event is: ");
+        SerialUSB.println(((TouchMessage*)touch)->touchData[i].event);
+      }
+    }
 
     zforce.DestroyMessage(touch);
   }

@@ -16,9 +16,21 @@
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#include "I2C/I2C.h"
-#include "Zforce.h"
+
+
 #include <string.h>
+#if USE_I2C_LIB == 1
+  #include "../include/I2C/I2C.h"
+#else
+  #include <inttypes.h>
+  #include <Wire.h>
+  #if(ARDUINO >= 100)
+    #include <Arduino.h>
+  #else
+    #include <WProgram.h>
+  #endif
+#endif
+#include "Zforce.h"
 
 Zforce::Zforce()
 {
@@ -28,12 +40,17 @@ void Zforce::Start(int dr)
 {
   dataReady = dr;
   pinMode(dataReady, INPUT);
+#if USE_I2C_LIB == 1
   I2c.setSpeed(1);
   I2c.begin();
+#else
+  Wire.begin();
+#endif
 }
 
 int Zforce::Read(uint8_t * payload)
 {
+#if USE_I2C_LIB == 1
   int status = 0;
 
   status = I2c.read(ZFORCE_I2C_ADDRESS, 2);
@@ -45,6 +62,20 @@ int Zforce::Read(uint8_t * payload)
   status = I2c.read(ZFORCE_I2C_ADDRESS, payload[1], &payload[2]);
 
   return status; // return 0 if success, otherwise error code according to Atmel Data Sheet
+#else
+  Wire.requestFrom(ZFORCE_I2C_ADDRESS, 2);
+  payload[0] = Wire.read();
+  payload[1] = Wire.read();
+  
+  int index = 2;
+  Wire.requestFrom(ZFORCE_I2C_ADDRESS, payload[1]);
+  while (Wire.available())
+  {
+    payload[index++] = Wire.read();
+  }
+  
+  return 0;
+#endif
 }
 
 /*
@@ -52,10 +83,18 @@ int Zforce::Read(uint8_t * payload)
  */
 int Zforce::Write(uint8_t* payload)
 {
+#if USE_I2C_LIB == 1
   int len = payload[1] + 1;
   int status = I2c.write(ZFORCE_I2C_ADDRESS, payload[0], &payload[1], len);
 
   return status; // return 0 if success, otherwise error code according to Atmel Data Sheet
+#else
+  Wire.beginTransmission(ZFORCE_I2C_ADDRESS);
+  Wire.write(payload, payload[1] + 2);
+  Wire.endTransmission();
+
+  return 0;
+#endif
 }
 
 bool Zforce::Enable(bool isEnabled)
