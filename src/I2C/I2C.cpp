@@ -53,6 +53,8 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+
+
 #if(ARDUINO >= 100)
 #include <Arduino.h>
 #else
@@ -60,9 +62,10 @@
 #endif
 
 #include <inttypes.h>
+
 #include "I2C.h"
 
-
+#if USE_I2C_LIB
 
 uint8_t I2C::bytesAvailable = 0;
 uint8_t I2C::bufferIndex = 0;
@@ -707,3 +710,4 @@ void I2C::lockUp()
 
 I2C I2c = I2C();
 
+#endif // endif USE_I2C_LIB
