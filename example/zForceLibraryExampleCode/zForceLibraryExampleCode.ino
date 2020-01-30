@@ -22,7 +22,7 @@
 /*
  * If you are using a SAMD board, uncomment the define below in order to print to the serial monitor.
  */
-// #define Serial SerialUSB
+//#define Serial SerialUSB
 
 void setup()
 {

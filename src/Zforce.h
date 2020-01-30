@@ -29,8 +29,6 @@
 #define USE_I2C_LIB 0
 #endif
 
-
-
 enum TouchEvent
 {
 	DOWN = 0,
