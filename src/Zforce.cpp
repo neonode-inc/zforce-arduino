@@ -122,10 +122,10 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
 
   uint8_t touchActiveArea[] = {0xEE, length + 10, 0xEE, length + 8,
                                0x40, 0x02, 0x02, 0x00, 0x73, length + 2, 0xA2, length,
-                               0x80, 02, (uint8_t)(minX >> 8), (uint8_t)(minX & 0xFF),
-                               0x81, 02, (uint8_t)(minY >> 8), (uint8_t)(minY & 0xFF),
-                               0x82, 02, (uint8_t)(maxX >> 8), (uint8_t)(maxX & 0xFF),
-                               0x83, 02, (uint8_t)(maxY >> 8), (uint8_t)(maxY & 0xFF)};
+                               0x80, 0x02, (uint8_t)(minX >> 8), (uint8_t)(minX & 0xFF),
+                               0x81, 0x02, (uint8_t)(minY >> 8), (uint8_t)(minY & 0xFF),
+                               0x82, 0x02, (uint8_t)(maxX >> 8), (uint8_t)(maxX & 0xFF),
+                               0x83, 0x02, (uint8_t)(maxY >> 8), (uint8_t)(maxY & 0xFF)};
 
   if (Write(touchActiveArea)) // We assume that the end user has called GetMessage prior to calling this method
   {
@@ -138,6 +138,32 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
 
   return !failed;
 }
+
+bool Zforce::Frequency(uint16_t idleFrequency, uint16_t fingerFrequency)
+{
+    bool failed = false;
+
+    const uint8_t length = 8;
+
+    uint8_t frequency[] = { 0xEE, length + 8, 0xEE, length + 6,
+                            0x40, 0x02, 0x02, 0x00, 0x68, length,
+                            0x80, 0x02, (uint8_t)(fingerFrequency >> 8), (uint8_t)(fingerFrequency & 0xFF),
+                            0x82, 0x02, (uint8_t)(idleFrequency   >> 8), (uint8_t)(idleFrequency   & 0xFF)};
+
+
+    if (Write(frequency)) // We assume that the end user has called GetMessage prior to calling this method
+    {
+        failed = true;
+    }
+    else
+    {
+        lastSentMessage = MessageType::FREQUENCYTYPE;
+    }
+
+    return !failed;
+}
+
+
 
 bool Zforce::FlipXY(bool isFlipped)
 {
@@ -324,6 +350,13 @@ void Zforce::ParseResponse(uint8_t* payload, Message** msg)
       ParseReportedTouches((ReportedTouchesMessage*)(*(msg)), payload);
     }
     break;
+    case MessageType::FREQUENCYTYPE:
+    {
+        (*(msg)) = new FrequencyMessage;
+        (*(msg))->type = MessageType::FREQUENCYTYPE;
+        ParseFrequency((FrequencyMessage*)(*(msg)), payload);
+    }
+    break;
     default:
     {
       (*(msg)) = new Message;
@@ -333,11 +366,58 @@ void Zforce::ParseResponse(uint8_t* payload, Message** msg)
   }
 }
 
+void Zforce::ParseFrequency(FrequencyMessage* msg, uint8_t* payload)
+{
+    const uint8_t offset = 8;
+    uint16_t value = 0;
+    uint16_t valueLength = 0;
+
+    for (int i = offset; i < payload[9] + offset; i++)
+    {
+        switch (payload[i])
+        {
+        case 0x80: // Finger Frequency
+            valueLength = payload[i + 1];
+
+            if (valueLength == 2)
+            {
+                value = payload[i + 2] << 8;
+                value |= payload[i + 3];
+            }
+            else
+            {
+                value = payload[i + 2];
+            }
+            msg->fingerFrequency = value;
+            break;
+
+        case 0x82: //Idle Frequency
+            valueLength = payload[i + 1];
+
+            if (valueLength == 2)
+            {
+                value = payload[i + 2] << 8;
+                value |= payload[i + 3];
+            }
+            else
+            {
+                value = payload[i + 2];
+            }
+            msg->idleFrequency = value;
+            break;
+
+        default:
+            break;
+        }
+    }
+}
+
 void Zforce::ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload)
 {
   const uint8_t offset = 10;
   uint16_t value = 0;
   uint16_t valueLength = 0;
+
   for (int i = offset; i < payload[11] + offset; i++) // 10 = index for SubTouchActiveArea struct, 11 index for length of SubTouchActiveArea struct
   {
     switch (payload[i])
