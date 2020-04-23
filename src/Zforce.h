@@ -100,8 +100,8 @@ typedef struct FrequencyMessage : public Message
 	{
 
 	}
-	uint8_t idleFrequency;
-	uint8_t fingerFrequency;
+	uint16_t idleFrequency;
+	uint16_t fingerFrequency;
 } FrequencyMessage;
 
 

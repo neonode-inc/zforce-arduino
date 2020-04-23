@@ -147,8 +147,8 @@ bool Zforce::Frequency(uint16_t idleFrequency, uint16_t fingerFrequency)
 
     uint8_t frequency[] = { 0xEE, length + 8, 0xEE, length + 6,
                             0x40, 0x02, 0x02, 0x00, 0x68, length,
-                            0x80, 0x02, (uint8_t)(fingerFrequency >> 8), (uint8_t)(fingerFrequency & 0xFF) ,
-                            0x82, 0x02, (uint8_t)(idleFrequency   >> 8), (uint8_t)(idleFrequency   & 0xFF) };
+                            0x80, 0x02, (uint8_t)(fingerFrequency >> 8), (uint8_t)(fingerFrequency & 0xFF),
+                            0x82, 0x02, (uint8_t)(idleFrequency   >> 8), (uint8_t)(idleFrequency   & 0xFF)};
 
 
     if (Write(frequency)) // We assume that the end user has called GetMessage prior to calling this method
@@ -368,11 +368,11 @@ void Zforce::ParseResponse(uint8_t* payload, Message** msg)
 
 void Zforce::ParseFrequency(FrequencyMessage* msg, uint8_t* payload)
 {
-    const uint8_t offset = 10;
+    const uint8_t offset = 8;
     uint16_t value = 0;
     uint16_t valueLength = 0;
 
-    for (int i = offset; i < payload[11] + offset; i++)
+    for (int i = offset; i < payload[9] + offset; i++)
     {
         switch (payload[i])
         {
