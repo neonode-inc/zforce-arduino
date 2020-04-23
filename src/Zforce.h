@@ -40,7 +40,8 @@ enum class MessageType
 	FLIPXYTYPE = 5,
 	REPORTEDTOUCHESTYPE = 6,
 	TOUCHTYPE = 7,
-	BOOTCOMPLETETYPE = 8
+	BOOTCOMPLETETYPE = 8,
+	FREQUENCYTYPE = 9
 };
 
 
@@ -93,6 +94,17 @@ typedef struct TouchActiveAreaMessage : public Message
 	uint16_t maxY;
 } TouchActiveAreaMessage;
 
+typedef struct FrequencyMessage : public Message
+{
+	virtual ~FrequencyMessage()
+	{
+
+	}
+	uint16_t idleFrequency;
+	uint16_t fingerFrequency;
+} FrequencyMessage;
+
+
 typedef struct FlipXYMessage : public Message
 {
 	virtual ~FlipXYMessage()
@@ -142,6 +154,7 @@ class Zforce
 		bool FlipXY(bool isFlipped);
 		bool ReverseX(bool isReversed);
 		bool ReverseY(bool isReversed);
+		bool Frequency(uint16_t idleFrequency, uint16_t fingerFrequency);
 		bool ReportedTouches(uint8_t touches); // Missing
 		int GetDataReady();
 		Message* GetMessage();
@@ -150,6 +163,7 @@ class Zforce
 		Message* VirtualParse(uint8_t* payload);
 		void ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload);
 		void ParseEnable(EnableMessage* msg, uint8_t* payload);
+		void ParseFrequency(FrequencyMessage* msg, uint8_t* payload);
 		void ParseReportedTouches(ReportedTouchesMessage* msg, uint8_t* payload);
 		void ParseReverseX(ReverseXMessage* msg, uint8_t* payload);
 		void ParseReverseY(ReverseYMessage* msg, uint8_t* payload);
