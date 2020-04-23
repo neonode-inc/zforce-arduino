@@ -122,10 +122,10 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
 
   uint8_t touchActiveArea[] = {0xEE, length + 10, 0xEE, length + 8,
                                0x40, 0x02, 0x02, 0x00, 0x73, length + 2, 0xA2, length,
-                               0x80, 02, (uint8_t)(minX >> 8), (uint8_t)(minX & 0xFF),
-                               0x81, 02, (uint8_t)(minY >> 8), (uint8_t)(minY & 0xFF),
-                               0x82, 02, (uint8_t)(maxX >> 8), (uint8_t)(maxX & 0xFF),
-                               0x83, 02, (uint8_t)(maxY >> 8), (uint8_t)(maxY & 0xFF)};
+                               0x80, 0x02, (uint8_t)(minX >> 8), (uint8_t)(minX & 0xFF),
+                               0x81, 0x02, (uint8_t)(minY >> 8), (uint8_t)(minY & 0xFF),
+                               0x82, 0x02, (uint8_t)(maxX >> 8), (uint8_t)(maxX & 0xFF),
+                               0x83, 0x02, (uint8_t)(maxY >> 8), (uint8_t)(maxY & 0xFF)};
 
   if (Write(touchActiveArea)) // We assume that the end user has called GetMessage prior to calling this method
   {
@@ -139,7 +139,7 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
   return !failed;
 }
 
-bool Zforce::Frequency(uint8_t idleFrequency, uint8_t fingerFrequency)
+bool Zforce::Frequency(uint16_t idleFrequency, uint16_t fingerFrequency)
 {
     bool failed = false;
 
@@ -147,8 +147,8 @@ bool Zforce::Frequency(uint8_t idleFrequency, uint8_t fingerFrequency)
 
     uint8_t frequency[] = { 0xEE, length + 8, 0xEE, length + 6,
                             0x40, 0x02, 0x02, 0x00, 0x68, length,
-                            0x80, 0x01, (uint8_t)(fingerFrequency >> 8), (uint8_t)(fingerFrequency & 0xFF) ,
-                            0x82, 0x01, (uint8_t)(idleFrequency   >> 8), (uint8_t)(idleFrequency   & 0xFF) };
+                            0x80, 0x02, (uint8_t)(fingerFrequency >> 8), (uint8_t)(fingerFrequency & 0xFF) ,
+                            0x82, 0x02, (uint8_t)(idleFrequency   >> 8), (uint8_t)(idleFrequency   & 0xFF) };
 
 
     if (Write(frequency)) // We assume that the end user has called GetMessage prior to calling this method
@@ -356,6 +356,7 @@ void Zforce::ParseResponse(uint8_t* payload, Message** msg)
         (*(msg))->type = MessageType::FREQUENCYTYPE;
         ParseFrequency((FrequencyMessage*)(*(msg)), payload);
     }
+    break;
     default:
     {
       (*(msg)) = new Message;

@@ -154,7 +154,7 @@ class Zforce
 		bool FlipXY(bool isFlipped);
 		bool ReverseX(bool isReversed);
 		bool ReverseY(bool isReversed);
-		bool Frequency(uint8_t idleFrequency, uint8_t fingerFrequency);
+		bool Frequency(uint16_t idleFrequency, uint16_t fingerFrequency);
 		bool ReportedTouches(uint8_t touches); // Missing
 		int GetDataReady();
 		Message* GetMessage();
