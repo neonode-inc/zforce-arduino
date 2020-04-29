@@ -60,7 +60,7 @@ bool touchInit()
     {
         msg = zforce.GetMessage();
         delay(1);
-    } while (msg == NULL || --timeout >= 0); // Wait 500ms for the boot complete message
+    } while (msg == NULL && --timeout >= 0); // Wait 500ms for the boot complete message
      
     if(timeout <= 0)
     {
@@ -95,7 +95,7 @@ bool touchInit()
         {
             msg = zforce.GetMessage();
             delay(1);
-        } while (msg == NULL || --timeout >= 0); // Wait 500ms for the boot complete message
+        } while (msg == NULL && --timeout >= 0); // Wait 500ms for the boot complete message
 
         if(timeout <= 0)
         {
@@ -110,7 +110,7 @@ bool touchInit()
         {
             Serial.print("Received unknown response, expected: ");
             Serial.println((uint8_t)MessageType::ENABLETYPE);
-            Serial.print("Got: ")
+            Serial.print("Got: ");
             Serial.println((uint8_t)msg->type);
             ok = false;
         }
