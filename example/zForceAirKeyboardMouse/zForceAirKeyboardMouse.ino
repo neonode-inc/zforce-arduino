@@ -17,9 +17,9 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-/*  ------ Combined Keyboard and Relative Mouse Demo
+/*  ------ Combined Keyboard and Relative Mouse Demo ------
     This demo converts the touch data from the sensor to make it act as a relative mouse along with a few keyboard buttons.
-    The arduino is then recognized by the OS as a combined keyboard and relative mouse.
+    The arduino is then recognized by the OS as a combined HID keyboard and relative mouse.
 */
 
 #include <Keyboard.h>
