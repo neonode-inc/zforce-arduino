@@ -1,6 +1,6 @@
 /*  Neonode zForce v7 interface library for Arduino
 
-    Copyright (C) 2019 Neonode Inc.
+    Copyright (C) 2020 Neonode Inc.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -18,11 +18,6 @@
 */
 #include <Zforce.h>
 #define DATA_READY 4
-
-/*
- * If you are using a SAMD board, uncomment the define below in order to print to the serial monitor.
- */
-//#define Serial SerialUSB
 
 void setup()
 {
