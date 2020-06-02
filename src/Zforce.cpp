@@ -166,15 +166,13 @@ bool Zforce::Frequency(uint16_t idleFrequency, uint16_t fingerFrequency)
 bool Zforce::SizeRestriction(bool maxSizeEnabled, uint16_t maxSize, bool minSizeEnabled, uint16_t minSize)
 {
     bool failed = false;
-
     const uint8_t length = 14;
-
-    uint8_t sizeRestriction[] = { 0xEE, length + 9, 0xEE, length + 7,
-                            0x40, 0x02, 0x02, 0x00, 0x73, length+2, 0xA4, length,
+    uint8_t sizeRestriction[] = { 0xEE, length + 10, 0xEE, length + 8,
+                            0x40, 0x02, 0x02, 0x00, 0x73, length + 2, 0xA4, length,
                             0x80, 0x01, (uint8_t)(maxSizeEnabled ? 0xFF : 0x00),                         //max size enabled 
-                            0x81, 0x01, (uint8_t)(maxSize >> 8), (uint8_t)(maxSize & 0xFF),              //max size
+                            0x81, 0x02, (uint8_t)(maxSize >> 8), (uint8_t)(maxSize & 0xFF),              //max size
                             0x82, 0x01, (uint8_t)(minSizeEnabled ? 0xFF : 0x00),                         //min size enabled bool
-                            0x83, 0x01, (uint8_t)(minSize >> 8), (uint8_t)(minSize & 0xFF)};             //min size
+                            0x83, 0x02, (uint8_t)(minSize >> 8), (uint8_t)(minSize & 0xFF) };            //min size
 
     if (Write(sizeRestriction)) // We assume that the end user has called GetMessage prior to calling this method
     {
@@ -451,23 +449,12 @@ void Zforce::ParseSizeRestriction(SizeRestrictionMessage* msg, uint8_t* payload)
     uint16_t value = 0;
     uint16_t valueLength = 0;
 
-    for (int i = offset; i < payload[9] + offset; i++)
+    for (int i = offset; i < payload[11] + offset; i++)
     {
         switch (payload[i])
         {
         case 0x80: //max size bool
-            valueLength = payload[i + 1];
-
-            if (valueLength == 2)
-            {
-                value = payload[i + 2] << 8;
-                value |= payload[i + 3];
-            }
-            else
-            {
-                value = payload[i + 2];
-            }
-            msg->maxSizeEnabled = value;
+            msg->maxSizeEnabled = (bool)payload[i + 2];
             break;
 
         case 0x81: //max size
@@ -485,19 +472,8 @@ void Zforce::ParseSizeRestriction(SizeRestrictionMessage* msg, uint8_t* payload)
             msg->maxSize = value;
             break;
 
-        case 0x82: //min bool
-            valueLength = payload[i + 1];
-
-            if (valueLength == 2)
-            {
-                value = payload[i + 2] << 8;
-                value |= payload[i + 3];
-            }
-            else
-            {
-                value = payload[i + 2];
-            }
-            msg->minSizeEnabled = value;
+        case 0x82: //min size bool
+            msg->minSizeEnabled = (bool)payload[i + 2];
             break;
 
         case 0x83: //min size
