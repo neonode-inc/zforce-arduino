@@ -18,6 +18,7 @@ ReverseYMessage	KEYWORD1
 ReportedTouchesMessage	KEYWORD1
 Zforce	KEYWORD1
 FrequencyMessage 	KEYWORD1
+SizeRestrictionMessage	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
@@ -36,6 +37,7 @@ GetDataReady	KEYWORD2
 GetMessage	KEYWORD2
 DestroyMessage	KEYWORD2
 Frequency	KEYWORD2
+SizeRestriction	KEYWORD2
 
 #######################################
 # Instances (KEYWORD2)
