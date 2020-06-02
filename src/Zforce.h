@@ -41,7 +41,8 @@ enum class MessageType
 	REPORTEDTOUCHESTYPE = 6,
 	TOUCHTYPE = 7,
 	BOOTCOMPLETETYPE = 8,
-	FREQUENCYTYPE = 9
+	FREQUENCYTYPE = 9,
+	SIZERESTRICTIONTYPE = 10
 };
 
 
@@ -49,6 +50,7 @@ typedef struct TouchData
 {
 	uint16_t x;
 	uint16_t y;
+	uint16_t sizeX;   //the estimated diameter of the touch object
 	uint8_t id;
 	TouchEvent event;
 } TouchData;
@@ -93,6 +95,21 @@ typedef struct TouchActiveAreaMessage : public Message
 	uint16_t maxX;
 	uint16_t maxY;
 } TouchActiveAreaMessage;
+
+typedef struct SizeRestrictionMessage : public Message
+{
+	virtual ~SizeRestrictionMessage()
+	{
+
+	}
+	bool maxSizeEnabled;
+	uint16_t maxSize;
+	bool minSizeEnabled;
+	uint16_t minSize;
+
+} SizeRestrictionMessage;
+
+
 
 typedef struct FrequencyMessage : public Message
 {
@@ -156,12 +173,14 @@ class Zforce
 		bool ReverseY(bool isReversed);
 		bool Frequency(uint16_t idleFrequency, uint16_t fingerFrequency);
 		bool ReportedTouches(uint8_t touches); // Missing
+		bool SizeRestriction(bool maxSizeEnabled, uint16_t maxSize, bool minSizeEnabled, uint16_t minSize);
 		int GetDataReady();
 		Message* GetMessage();
 		void DestroyMessage(Message * msg);
     private:
 		Message* VirtualParse(uint8_t* payload);
 		void ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload);
+		void ParseSizeRestriction(SizeRestrictionMessage* msg, uint8_t* payload);
 		void ParseEnable(EnableMessage* msg, uint8_t* payload);
 		void ParseFrequency(FrequencyMessage* msg, uint8_t* payload);
 		void ParseReportedTouches(ReportedTouchesMessage* msg, uint8_t* payload);

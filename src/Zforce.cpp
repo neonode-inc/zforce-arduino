@@ -163,7 +163,30 @@ bool Zforce::Frequency(uint16_t idleFrequency, uint16_t fingerFrequency)
     return !failed;
 }
 
+bool Zforce::SizeRestriction(bool maxSizeEnabled, uint16_t maxSize, bool minSizeEnabled, uint16_t minSize)
+{
+    bool failed = false;
 
+    const uint8_t length = 14;
+
+    uint8_t sizeRestriction[] = { 0xEE, length + 9, 0xEE, length + 7,
+                            0x40, 0x02, 0x02, 0x00, 0x73, length+2, 0xA4, length,
+                            0x80, 0x01, (uint8_t)(maxSizeEnabled ? OxFF : 0x00),                         //max size enabled 
+                            0x81, 0x01, (uint8_t)(maxSize >> 8), (uint8_t)(maxSize & 0xFF),              //max size
+                            0x82, 0x01, (uint8_t)(minSizeEnabled ? OxFF : 0x00)                          //min size enabled bool
+                            0x83, 0x01, (uint8_t)(minSize >> 8), (uint8_t)(minSize & 0xFF)};             //min size
+
+    if (Write(sizeRestriction)) // We assume that the end user has called GetMessage prior to calling this method
+    {
+        failed = true;
+    }
+    else
+    {
+        lastSentMessage = MessageType::SIZERESTRICTIONTYPE;
+    }
+
+    return !failed;
+}
 
 bool Zforce::FlipXY(bool isFlipped)
 {
@@ -357,6 +380,14 @@ void Zforce::ParseResponse(uint8_t* payload, Message** msg)
         ParseFrequency((FrequencyMessage*)(*(msg)), payload);
     }
     break;
+    case MessageType::SIZERESTRICTIONTYPE:
+    {
+        (*(msg)) = new SizeRestrictionMessage;
+        (*(msg))->type = MessageType::SIZERESTRICTIONTYPE;
+        ParseSizeRestriction((SizeRestrictionMessage*)(*(msg)), payload);
+    }
+    break;
+
     default:
     {
       (*(msg)) = new Message;
@@ -411,6 +442,84 @@ void Zforce::ParseFrequency(FrequencyMessage* msg, uint8_t* payload)
         }
     }
 }
+
+
+
+void Zforce::ParseSizeRestriction(SizeRestrictionMessage* msg, uint8_t* payload)
+{
+    const uint8_t offset = 10;
+    uint16_t value = 0;
+    uint16_t valueLength = 0;
+
+    for (int i = offset; i < payload[9] + offset; i++)
+    {
+        switch (payload[i])
+        {
+        case 0x80: //max size bool
+            valueLength = payload[i + 1];
+
+            if (valueLength == 2)
+            {
+                value = payload[i + 2] << 8;
+                value |= payload[i + 3];
+            }
+            else
+            {
+                value = payload[i + 2];
+            }
+            msg->maxSizeEnabled = value;
+            break;
+
+        case 0x81: //max size
+            valueLength = payload[i + 1];
+
+            if (valueLength == 2)
+            {
+                value = payload[i + 2] << 8;
+                value |= payload[i + 3];
+            }
+            else
+            {
+                value = payload[i + 2];
+            }
+            msg->maxSize = value;
+            break;
+
+        case 0x82: //min bool
+            valueLength = payload[i + 1];
+
+            if (valueLength == 2)
+            {
+                value = payload[i + 2] << 8;
+                value |= payload[i + 3];
+            }
+            else
+            {
+                value = payload[i + 2];
+            }
+            msg->minSizeEnabled = value;
+            break;
+
+        case 0x83: //min size
+            valueLength = payload[i + 1];
+
+            if (valueLength == 2)
+            {
+                value = payload[i + 2] << 8;
+                value |= payload[i + 3];
+            }
+            else
+            {
+                value = payload[i + 2];
+            }
+            msg->minSize = value;
+            break;
+        default:
+            break;
+        }
+    }
+}
+
 
 void Zforce::ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload)
 {
@@ -566,6 +675,8 @@ void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload)
     msg->touchData[i].x |= payload[15 + (i * 11)];
     msg->touchData[i].y = payload[16 + (i * 11)] << 8;
     msg->touchData[i].y |= payload[17 + (i * 11)];
+    msg->touchData[i].sizeX = payload[18 + (i * 11)] << 8;
+    msg->touchData[i].sizeX |= payload[19 + (i * 11)];
   }
 
 }
