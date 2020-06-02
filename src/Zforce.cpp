@@ -171,9 +171,9 @@ bool Zforce::SizeRestriction(bool maxSizeEnabled, uint16_t maxSize, bool minSize
 
     uint8_t sizeRestriction[] = { 0xEE, length + 9, 0xEE, length + 7,
                             0x40, 0x02, 0x02, 0x00, 0x73, length+2, 0xA4, length,
-                            0x80, 0x01, (uint8_t)(maxSizeEnabled ? OxFF : 0x00),                         //max size enabled 
+                            0x80, 0x01, (uint8_t)(maxSizeEnabled ? 0xFF : 0x00),                         //max size enabled 
                             0x81, 0x01, (uint8_t)(maxSize >> 8), (uint8_t)(maxSize & 0xFF),              //max size
-                            0x82, 0x01, (uint8_t)(minSizeEnabled ? OxFF : 0x00)                          //min size enabled bool
+                            0x82, 0x01, (uint8_t)(minSizeEnabled ? 0xFF : 0x00),                         //min size enabled bool
                             0x83, 0x01, (uint8_t)(minSize >> 8), (uint8_t)(minSize & 0xFF)};             //min size
 
     if (Write(sizeRestriction)) // We assume that the end user has called GetMessage prior to calling this method
@@ -678,7 +678,6 @@ void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload)
     msg->touchData[i].sizeX = payload[18 + (i * 11)] << 8;
     msg->touchData[i].sizeX |= payload[19 + (i * 11)];
   }
-
 }
 
 void Zforce::ClearBuffer(uint8_t* buffer)
