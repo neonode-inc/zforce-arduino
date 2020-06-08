@@ -164,7 +164,6 @@ bool Zforce::Frequency(uint16_t idleFrequency, uint16_t fingerFrequency)
 }
 
 
-
 bool Zforce::FlipXY(bool isFlipped)
 {
   bool failed = false;
@@ -357,6 +356,7 @@ void Zforce::ParseResponse(uint8_t* payload, Message** msg)
         ParseFrequency((FrequencyMessage*)(*(msg)), payload);
     }
     break;
+
     default:
     {
       (*(msg)) = new Message;
@@ -411,6 +411,8 @@ void Zforce::ParseFrequency(FrequencyMessage* msg, uint8_t* payload)
         }
     }
 }
+
+
 
 void Zforce::ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload)
 {
@@ -566,8 +568,9 @@ void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload)
     msg->touchData[i].x |= payload[15 + (i * 11)];
     msg->touchData[i].y = payload[16 + (i * 11)] << 8;
     msg->touchData[i].y |= payload[17 + (i * 11)];
+    msg->touchData[i].sizeX = payload[18 + (i * 11)] << 8;
+    msg->touchData[i].sizeX |= payload[19 + (i * 11)];
   }
-
 }
 
 void Zforce::ClearBuffer(uint8_t* buffer)
