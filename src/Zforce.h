@@ -41,7 +41,7 @@ enum class MessageType
 	REPORTEDTOUCHESTYPE = 6,
 	TOUCHTYPE = 7,
 	BOOTCOMPLETETYPE = 8,
-	FREQUENCYTYPE = 9
+	FREQUENCYTYPE = 9,
 };
 
 
@@ -49,6 +49,7 @@ typedef struct TouchData
 {
 	uint16_t x;
 	uint16_t y;
+	uint16_t sizeX;   //the estimated diameter of the touch object
 	uint8_t id;
 	TouchEvent event;
 } TouchData;
