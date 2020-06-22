@@ -241,6 +241,27 @@ bool Zforce::ReportedTouches(uint8_t touches)
   return !failed;
 }
 
+bool Zforce::DetectionMode(bool mergeTouches, bool reflectiveEdgeFilter)
+{
+  bool failed = false;
+
+  uint8_t detectionModeValue = 0x00;
+  detectionModeValue |= mergeTouches ? 0x20 : 0x00; // 0x20 as defined in the ASN.1 protocol
+  detectionModeValue |= reflectiveEdgeFilter ? 0x80 : 0x00; // 0x80 as defined in the ASN.1 protocol
+  uint8_t detectionMode[] = {0xEE, 0x0C, 0xEE, 0x0A, 0x40, 0x02, 0x02, 0x00, 0x73, 0x04, 0x85, 0x02, 0x00, detectionModeValue};
+
+  if (Write(detectionMode)) // We assume that the end user has called GetMessage prior to calling this method
+  {
+    failed = true;
+  }
+  else
+  {
+    lastSentMessage = MessageType::DETECTIONMODETYPE;
+  }
+
+  return !failed;
+}
+
 
 int Zforce::GetDataReady()
 {
@@ -356,7 +377,13 @@ void Zforce::ParseResponse(uint8_t* payload, Message** msg)
         ParseFrequency((FrequencyMessage*)(*(msg)), payload);
     }
     break;
-
+    case MessageType::DETECTIONMODETYPE:
+    {
+        (*(msg)) = new DetectionModeMessage;
+        (*(msg))->type = MessageType::DETECTIONMODETYPE;
+        ParseDetectionMode((DetectionModeMessage*)(*(msg)), payload);
+    }
+    break;
     default:
     {
       (*(msg)) = new Message;
@@ -411,8 +438,6 @@ void Zforce::ParseFrequency(FrequencyMessage* msg, uint8_t* payload)
         }
     }
 }
-
-
 
 void Zforce::ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload)
 {
@@ -551,6 +576,30 @@ void Zforce::ParseFlipXY(FlipXYMessage* msg, uint8_t* payload)
     {
       msg->flipXY = (bool)payload[i + 2];
       break;
+    }
+  }
+}
+
+void Zforce::ParseDetectionMode(DetectionModeMessage* msg, uint8_t* payload)
+{
+  uint8_t offset = payload[11] + 11; // 11 = Index for SubTouchActiveArea length
+  offset += payload[offset + 2]; // Add the length of the following Sequence to the offset
+  const uint8_t length = payload[1] + 2;
+
+  for (int i = offset; i < length; i++)
+  {
+    if (payload[i] == 0x85) // Primitive type = 0x60, context specific = 0x20, tag id = 0x05 => 0x85
+    {
+      // We found it
+      uint8_t valueLength = payload[i + 1];
+      msg->mergeTouches = (payload[i + valueLength + 1] & 0x20) != 0; 
+      msg->reflectiveEdgeFilter = (payload[i + valueLength + 1] & 0x80) != 0;
+      break;
+    }
+    else
+    {
+      // Keep looking 
+      i += payload[i + 1] + 1;
     }
   }
 }
