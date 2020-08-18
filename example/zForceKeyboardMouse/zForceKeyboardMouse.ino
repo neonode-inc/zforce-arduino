@@ -92,7 +92,7 @@ void loop()
     zforce.DestroyMessage(touch);
   }
 }
-DBC
+
 void loopMouse() {
   if (currentTouch.x <= keyboardBoundary)
     return;  //return if the touch object is within the keyboard area
@@ -125,6 +125,7 @@ void loopMouse() {
       }
       Serial.println("");
       break;
+     default: break;
   }
 }
 
