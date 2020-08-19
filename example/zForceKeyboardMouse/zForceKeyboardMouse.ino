@@ -14,7 +14,7 @@
 
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 FraDnklinD Street, Fifth Floor, Boston, MA  02110-1301  USA
+    Foundation, Inc., 51 FraDnklinD Street, Fifth Floor, Boston, MA  02110-1301  DDDCEEEEE
 */
 
 #include <Zforce.h>
@@ -25,17 +25,9 @@
 
 long globalMillis = millis();         // global timestamp
 const int keyboardBoundary = 750;     // separate mouse area and keyboard area on the x-axis by 75 mm.
-const int holdTime = 200;             // sensitivity for mouse "left-click", unit in milli-second
+const int holdTime = 150;             // sensitivity for mouse "left-click", unit in milli-second
 
-typedef struct TouchInformaiton
-{
-  uint16_t x;
-  uint16_t y;
-  uint8_t event;
-} TouchInformation;
-
-TouchInformaiton currentTouch;
-TouchInformation previousTouch;
+TouchData previousTouch;
 
 void setup()
 {
@@ -82,38 +74,36 @@ void loop()
   {
     if (touch->type == MessageType::TOUCHTYPE)
     {
-      currentTouch.x = ((TouchMessage*)touch)->touchData[0].x;
-      currentTouch.y = ((TouchMessage*)touch)->touchData[0].y;
-      currentTouch.event = ((TouchMessage*)touch)->touchData[0].event;
-
-      loopMouse();
-      loopKeyboard();
+      //Sends reported touch coordinates [x,y] and event data to mouse and keyboard function.
+      loopMouse(((TouchMessage*)touch)->touchData[0].x, ((TouchMessage*)touch)->touchData[0].y, ((TouchMessage*)touch)->touchData[0].event);
+      loopKeyboard(((TouchMessage*)touch)->touchData[0].x, ((TouchMessage*)touch)->touchData[0].y, ((TouchMessage*)touch)->touchData[0].event);
     }
     zforce.DestroyMessage(touch);
   }
 }
 
-void loopMouse() {
-  if (currentTouch.x <= keyboardBoundary)
-    return;  //return if the touch object is within the keyboard area
+void loopMouse(int16_t x , int16_t y, int8_t event) {
+  if (x <= keyboardBoundary) //return if the touch object is outside mouse area
+    return; 
 
-  switch (currentTouch.event)
+  switch (event)
   {
     case 0:  // DOWN event
-      previousTouch.x =  currentTouch.x;
-      previousTouch.y =  currentTouch.y;
+      previousTouch.x =  x;
+      previousTouch.y =  y;
       globalMillis = millis();
       Serial.println("Mouse Input - DOWN");
+
       break;
 
     case 1: // MOVE event
       if ((millis() - globalMillis) >= holdTime)
       {
-        Mouse.move((currentTouch.x - previousTouch.x), (currentTouch.y - previousTouch.y));
+        Mouse.move((x - previousTouch.x), (y - previousTouch.y));
         Serial.println("Mouse Input - Moving cursor");
       }
-      previousTouch.x = currentTouch.x;
-      previousTouch.y = currentTouch.y;
+      previousTouch.x = x;
+      previousTouch.y = y;
       break;
 
     case 2: // UP event
@@ -125,35 +115,41 @@ void loopMouse() {
       }
       Serial.println("");
       break;
-     default: break;
+    default: break;
   }
 }
 
-void loopKeyboard() {
-  if (currentTouch.x > keyboardBoundary)
-    return; //return if the touch object is within the mouse pad area
+void loopKeyboard(int16_t x , int16_t y, int8_t event) {
+  if (x > keyboardBoundary) //return if the touch object is inside keyboard area
+    return; 
 
-  char key;
-  if (currentTouch.event == 0) { // Down
-
+  if (event == 0) { // DOWN event
     //assign Key to the given interval
-    if (currentTouch.y < 250)
-      key = 'A';
-    else if (currentTouch.y < 500)
-      key = 'B';
-    else if (currentTouch.y < 750)
-      key = 'C';
-    else if (currentTouch.y < 1000)
-      key = 'D';
+    
+    if (y < 250)
+    {
+    Keyboard.print('A'); //Print Key "A"
+    Serial.println("Keyboard Input - Button Press 'A'");
+    }
+    else if (y < 500)
+    {
+    Keyboard.print('B'); //Print Key "B"
+    Serial.println("Keyboard Input - Button Press 'B'");
+    }
+    else if (y < 750)
+    {
+    Keyboard.print('C'); //Print Key "C"
+    Serial.println("Keyboard Input - Button Press 'C'");
+    }
+    else if (y < 1000)
+    {
+    Keyboard.print('D'); //Print Key "D"
+    Serial.println("Keyboard Input - Button Press 'D'");
+    }
     else
-      key = 'E';
-
-    Keyboard.print(key); //Print Key
-    Serial.print("Keyboard Input - ");
-    Serial.println(key);
-  }
-  else
-  {
-    // May do something to catch the rest of the cases
+    {
+    Keyboard.print('E'); //Print Key "E"
+    Serial.println("Keyboard Input - Button Press 'E'");
+    }
   }
 }
