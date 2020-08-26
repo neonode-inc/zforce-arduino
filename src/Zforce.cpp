@@ -20,10 +20,12 @@
 
 #include <string.h>
 #include <inttypes.h>
-#include "I2C/I2C.h"
 #include "Zforce.h"
-#if USE_I2C_LIB == 0
-  #include <Wire.h>
+#if USE_I2C_LIB == 1
+  #include "I2C/I2C.h" // for "official" SAMD21-based "Neonode Prototyping Board"
+#else
+  //#include <Wire.h> // R: doesn't provide a buffer big enough to fit enough bytes ( 32 bytes limit )
+  #include <MYWire.h> // for other Arduino boards ( ex: Arduino Micro Pro / 32u4, Arduino UNO / 328P, .. ) - buffer limit increased to 128 bytes
   #if(ARDUINO >= 100)
     #include <Arduino.h>
   #else
