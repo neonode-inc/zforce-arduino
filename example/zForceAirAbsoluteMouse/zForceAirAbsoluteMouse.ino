@@ -4,25 +4,22 @@
     22/08/2020 @StephaneAG
 */
 
-//#include <Mouse.h>
-#include <AbsMouse.h> // Thx https://github.com/jonathanedgecombe/absmouse
+//#include <Mouse.h> // official Arduino HID Mouse
+#include <AbsMouse.h> // Thx https://github.com/jonathanedgecombe/absmouse -> thx, neat work !
 
-//#include <Wire.h>
-//#define USE_I2C_LIB 1
-#include <Zforce.h> // R: includes modded I2C lib ..
+//#define USE_I2C_LIB 1 // comment-out if using official SAMD21-based NeoNode Prototyping board
+#include <Zforce.h> // R: modded version including I2C lib or modified "MYWire" lib
 #define PIN_NN_DR 7 // INT6
 #define PIN_NN_RST 5
 
 volatile bool newTouchDataFlag = false; // new data flag works with data ready pin ISR
 void dataReadyISR() { newTouchDataFlag = true; }
 
-
-
 void setup() {
   Serial.begin(115200);
   while(!Serial){}; // wait for serial conn
 
-  AbsMouse.init(1790, 1119); // R: native resolution 16-inch (3072 x 1920) / 1,7152428811
+  AbsMouse.init(1790, 1119); // R: native resolution 16-inch (3072 x 1920) / 1,7152428811 ==> mod for your laptop/computer screen size & resolution
 
   Serial.println("zforce start");
 
@@ -62,31 +59,7 @@ void setup() {
 }
 
 void loop() {
-  
-  // receives touch updates via polling - works fine :D
-  /*
-  Message* touch = zforce.GetMessage();
-  if (touch != NULL){
-    Serial.println("Touch Msg");
-    if (touch->type == MessageType::TOUCHTYPE){
-      for (uint8_t i = 0; i < ((TouchMessage*)touch)->touchCount; i++){
-        Serial.print("X is: ");
-        Serial.println(((TouchMessage*)touch)->touchData[i].x);
-        Serial.print("Y is: ");
-        Serial.println(((TouchMessage*)touch)->touchData[i].y);
-        Serial.print("ID is: ");
-        Serial.println(((TouchMessage*)touch)->touchData[i].id);
-        Serial.print("Event is: ");
-        Serial.println(((TouchMessage*)touch)->touchData[i].event);
-      }
-    }
-
-    zforce.DestroyMessage(touch);
-  }
-  */
-  
   // receives touch updates via ISR & external interrupt - also works fine :P
-  /**/
   if(newTouchDataFlag== true){
     Message* touch = zforce.GetMessage();
     if (touch != NULL){
@@ -132,5 +105,4 @@ void loop() {
     }
     newTouchDataFlag = false;
   }
-  /**/
 }
