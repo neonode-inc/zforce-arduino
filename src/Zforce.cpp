@@ -22,10 +22,10 @@
 #include <inttypes.h>
 #include "Zforce.h"
 #if USE_I2C_LIB == 1
-  #include "I2C/I2C.h" // for "official" SAMD21-based "Neonode Prototyping Board"
+  #include "I2C/I2C.h" // for "official" SAMD21-based "Neonode Prototyping Board" AND Arduino boards ( gotta test but I didn't try yet with 128 bytes buff in I2C.h just modded )
 #else
   //#include <Wire.h> // R: doesn't provide a buffer big enough to fit enough bytes ( 32 bytes limit )
-  #include <MYWire.h> // for other Arduino boards ( ex: Arduino Micro Pro / 32u4, Arduino UNO / 328P, .. ) - buffer limit increased to 128 bytes
+  #include <MYWire.h> // for other Arduino boards ( ex: Arduino Micro Pro / 32u4, Arduino UNO / 328P, .. ) - buffer limit increased to 128 bytes ( kept as fallback if I2C.h doesn't work for some reason, although I read in I2C.h that some devices needed specifics implemented in it or won't work ( .. ) )
   #if(ARDUINO >= 100)
     #include <Arduino.h>
   #else
