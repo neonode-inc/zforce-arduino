@@ -50,6 +50,12 @@ List of possible settings
 Cmd+F & search for ‘Message’ on this to digg related I2C codes ?
 - https://support.neonode.com/docs/display/SDKDOC/SDK+Complete+Function+Library
 
+Helped ( french accent there ^^ todo: test proposed software -> or not since it seems it won't help me much: I 'just' need a PDU viewer ? ):
+- https://www.youtube.com/watch?v=EccHushRhWs
+
+For bypassing the same 0x50 I2C addr thing:
+- https://learn.adafruit.com/adafruit-tca9548a-1-to-8-i2c-multiplexer-breakout // or smaller if can be found ( or use softWire or another uC with 2 hardware i2c's )
+
 In brief,
 - I2C adds is 0X50
 - Module is always 40 02 02 00
