@@ -91,7 +91,13 @@
 #define cbi(sfr, bit)   (_SFR_BYTE(sfr) &= ~_BV(bit))
 #define sbi(sfr, bit)   (_SFR_BYTE(sfr) |= _BV(bit))
 
-#define MAX_BUFFER_SIZE 32
+// => same trouble as in "Master" branch
+//#define MAX_BUFFER_SIZE 32 // originally
+#define MAX_BUFFER_SIZE 128 // StephaneAG guess - not verified yet :/ ..
+// ==> just spotted the aboe while finishing pushing my fix 
+// ( aka, modded Wire.h as "MYWire.h" that increases the buffer & including it instead of I2C.h if flag 'USE_I2C_LIB' not defined )
+// -> I'll try testing if this fixes it also ( I guess should ? ) without resorting to the above-explained trick for buffer increase
+// ( plus I guess/hope your implementatioh, if working as expected, 'll likely be optimised & thus faster that the default Arduino's Wire.h :) )
 
 
 
