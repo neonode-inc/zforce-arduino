@@ -91,8 +91,8 @@
 #define cbi(sfr, bit)   (_SFR_BYTE(sfr) &= ~_BV(bit))
 #define sbi(sfr, bit)   (_SFR_BYTE(sfr) |= _BV(bit))
 
-#define MAX_BUFFER_SIZE 32
-
+//#define MAX_BUFFER_SIZE 32 // R: smae trouble as in other branches ( I really hope I'm not making your job harder by putting stuff here & there .. )
+#define MAX_BUFFER_SIZE 128
 
 
 
