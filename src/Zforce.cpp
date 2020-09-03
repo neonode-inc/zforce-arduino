@@ -262,6 +262,23 @@ bool Zforce::DetectionMode(bool mergeTouches, bool reflectiveEdgeFilter)
   return !failed;
 }
 
+bool Zforce::TouchFormat()
+{
+  bool failed = false;
+  uint8_t touchFormat[] = {0xEE, 0x08, 0xEE, 0x06, 0x40, 0x02, 0x02, 0x00, 0x66, 0x00};
+
+  if (Write(touchFormat))
+  {
+    failed = true;
+  }
+  else
+  {
+    lastSentMessage = MessageType::TOUCHFORMATTYPE;
+  }
+
+  return !failed;
+}
+
 
 int Zforce::GetDataReady()
 {
@@ -372,16 +389,23 @@ void Zforce::ParseResponse(uint8_t* payload, Message** msg)
     break;
     case MessageType::FREQUENCYTYPE:
     {
-        (*(msg)) = new FrequencyMessage;
-        (*(msg))->type = MessageType::FREQUENCYTYPE;
-        ParseFrequency((FrequencyMessage*)(*(msg)), payload);
+      (*(msg)) = new FrequencyMessage;
+      (*(msg))->type = MessageType::FREQUENCYTYPE;
+      ParseFrequency((FrequencyMessage*)(*(msg)), payload);
     }
     break;
     case MessageType::DETECTIONMODETYPE:
     {
-        (*(msg)) = new DetectionModeMessage;
-        (*(msg))->type = MessageType::DETECTIONMODETYPE;
-        ParseDetectionMode((DetectionModeMessage*)(*(msg)), payload);
+      (*(msg)) = new DetectionModeMessage;
+      (*(msg))->type = MessageType::DETECTIONMODETYPE;
+      ParseDetectionMode((DetectionModeMessage*)(*(msg)), payload);
+    }
+    break;
+    case MessageType::TOUCHFORMATTYPE:
+    {
+      (*(msg)) = new TouchDescriptorMessage;
+      (*(msg))->type = MessageType::TOUCHFORMATTYPE;
+      ParseTouchDescriptor((TouchDescriptorMessage*)(*(msg)), payload);
     }
     break;
     default:
@@ -390,6 +414,34 @@ void Zforce::ParseResponse(uint8_t* payload, Message** msg)
       (*(msg))->type = MessageType::NONE;
     }
     break;
+  }
+}
+
+void Zforce::ParseTouchDescriptor(TouchDescriptorMessage* msg, uint8_t* payload)
+{
+  uint8_t amountBits = ((payload[11] - 1) * 8) - payload[12];
+
+  uint32_t descr = 0; //= deserialize_BitString(&payload[13]);
+  descr |= payload[13] << 24;
+  descr |= payload[14] << 16;
+  descr |= payload[15] << 8;
+
+  msg->descriptor = new TouchDescriptor[(int)TouchDescriptor::MaxValue];
+  uint8_t bitIndex = 0;
+  uint8_t descIndex = 0;
+  while (bitIndex <= amountBits)
+  {
+    if (descr & (0x80000000 >> bitIndex))
+    {
+      msg->descriptor[descIndex++] = (TouchDescriptor)bitIndex;
+    }
+    bitIndex++;
+  }
+
+  touchDescriptor = new TouchDescriptor[descIndex];
+  for (int i = 0; i < descIndex; i++)
+  {
+    touchDescriptor[i] = msg->descriptor[i];
   }
 }
 

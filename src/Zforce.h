@@ -42,7 +42,8 @@ enum class MessageType
 	TOUCHTYPE = 7,
 	BOOTCOMPLETETYPE = 8,
 	FREQUENCYTYPE = 9,
-	DETECTIONMODETYPE = 10
+	DETECTIONMODETYPE = 10,
+	TOUCHFORMATTYPE = 11
 };
 
 
@@ -153,6 +154,44 @@ typedef struct DetectionModeMessage : public Message
 	bool reflectiveEdgeFilter;
 } DetectionModeMessage;
 
+enum class TouchDescriptor : uint8_t
+{
+		Id = 0,
+        Event = 1,
+        LocXByte1 = 2,
+        LocXByte2 = 3,
+        LocXByte3 = 4,
+        LocYByte1 = 5,
+        LocYByte2 = 6,
+        LocYByte3 = 7,
+        LocZByte1 = 8 ,
+        LocZByte2 = 9,
+        LocZByte3 = 10,
+        SizeXByte1 = 11,
+        SizeXByte2 = 12,
+        SizeXByte3 = 13,
+        SizeYByte1 = 14,
+        SizeYByte2 = 15,
+        SizeYByte3 = 16,
+        SizeZByte1 = 17,
+        SizeZByte2 = 18,
+        SizeZByte3 = 19,
+        Orientation = 20,
+        Confidence = 21,
+        Pressure = 22,
+		MaxValue = 23 // Maximum value of enum
+};
+
+typedef struct TouchDescriptorMessage : public Message
+{
+	virtual ~TouchDescriptorMessage()
+	{
+
+	}
+	TouchDescriptor *descriptor;
+
+} TouchDescriptorMessage;
+
 
 class Zforce 
 {
@@ -168,7 +207,8 @@ class Zforce
 		bool ReverseY(bool isReversed);
 		bool Frequency(uint16_t idleFrequency, uint16_t fingerFrequency);
 		bool ReportedTouches(uint8_t touches);
-		bool DetectionMode(bool mergeTouches, bool reflectiveEdgeFilter);		
+		bool DetectionMode(bool mergeTouches, bool reflectiveEdgeFilter);	
+		bool TouchFormat();	
 		int GetDataReady();
 		Message* GetMessage();
 		void DestroyMessage(Message * msg);
@@ -184,10 +224,13 @@ class Zforce
 		void ParseTouch(TouchMessage* msg, uint8_t* payload);
 		void ParseDetectionMode(DetectionModeMessage* msg, uint8_t* payload);
 		void ParseResponse(uint8_t* payload, Message** msg);
+		void ParseTouchDescriptor(TouchDescriptorMessage* msg, uint8_t* payload);
 		void ClearBuffer(uint8_t* buffer);
 		uint8_t buffer[MAX_PAYLOAD];
 		int dataReady;
 		volatile MessageType lastSentMessage;
+		TouchDescriptor *touchDescriptor = nullptr;
+		const uint8_t maxBytesTouchFormat = 23;
 };
 
 extern Zforce zforce;
