@@ -192,6 +192,11 @@ typedef struct TouchDescriptorMessage : public Message
 
 } TouchDescriptorMessage;
 
+typedef struct TouchMetaInformation
+{
+	TouchDescriptor *touchDescriptor;
+	uint8_t touchByteCount = 0;
+} TouchMetaInformation;
 
 class Zforce 
 {
@@ -229,7 +234,7 @@ class Zforce
 		uint8_t buffer[MAX_PAYLOAD];
 		int dataReady;
 		volatile MessageType lastSentMessage;
-		TouchDescriptor *touchDescriptor = nullptr;
+		TouchMetaInformation touchMetaInformation;
 		const uint8_t maxBytesTouchFormat = 23;
 };
 
