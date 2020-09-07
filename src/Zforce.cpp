@@ -685,7 +685,7 @@ void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload)
   {
     uint8_t expectedTouchLength = touchMetaInformation.touchByteCount + 2;
     uint8_t timestampLength = (payload[9] % expectedTouchLength);
-    if (payload[9] % expectedTouchLength != 0)
+    if (timestampLength != 0)
     {
       // We have a timestamp
       timestampLength -= 2; // Remove count for identifier and length byte
