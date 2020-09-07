@@ -49,9 +49,9 @@ enum class MessageType
 
 typedef struct TouchData
 {
-	uint16_t x;
-	uint16_t y;
-	uint16_t sizeX;   //the estimated diameter of the touch object
+	uint32_t x;
+	uint32_t y;
+	uint32_t sizeX;   //the estimated diameter of the touch object
 	uint8_t id;
 	TouchEvent event;
 } TouchData;
@@ -72,6 +72,7 @@ typedef struct TouchMessage : public Message
 		delete[] touchData;
 		touchData = nullptr;
 	}
+	uint32_t timestamp;
 	uint8_t touchCount;
 	TouchData* touchData;
 } TouchMessage;
@@ -186,7 +187,8 @@ typedef struct TouchDescriptorMessage : public Message
 {
 	virtual ~TouchDescriptorMessage()
 	{
-
+		delete descriptor;
+		descriptor = nullptr;
 	}
 	TouchDescriptor *descriptor;
 
@@ -235,7 +237,6 @@ class Zforce
 		int dataReady;
 		volatile MessageType lastSentMessage;
 		TouchMetaInformation touchMetaInformation;
-		const uint8_t maxBytesTouchFormat = 23;
 };
 
 extern Zforce zforce;

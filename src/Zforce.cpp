@@ -45,6 +45,23 @@ void Zforce::Start(int dr)
 #else
   Wire.begin();
 #endif
+
+  // Read out potential boot complete notification
+  auto msg = this->GetMessage();
+  if (msg != nullptr)
+  {
+    this->DestroyMessage(msg);
+  }
+
+  // Get the touch descriptor from the sensor in order to deserialize the touch notifications
+  this->TouchFormat();
+  do
+  {
+    msg = this->GetMessage();
+  } while (msg == nullptr);
+
+  this->DestroyMessage(msg);
+ 
 }
 
 int Zforce::Read(uint8_t * payload)
@@ -666,30 +683,17 @@ void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload)
   } 
   else
   {
-    uint8_t timestampLength = 0;
-    uint8_t indexTouchLength = 11 + payload[11];
-    for(;;)
+    uint8_t expectedTouchLength = touchMetaInformation.touchByteCount + 2;
+    uint8_t timestampLength = (payload[9] % expectedTouchLength);
+    if (payload[9] % expectedTouchLength != 0)
     {
-      if (indexTouchLength >= (payload[1] + 2))
+      // We have a timestamp
+      timestampLength -= 2; // Remove count for identifier and length byte
+      for (int8_t i = timestampLength - 1; i >= 0; i--) // - 1 to count for off by one error
       {
-        // No timestamp
-        break;
+        msg->timestamp |= payload[(payload[1] + 2) - i] << (8 * i);
       }
-      else if (payload[indexTouchLength + 1] == 0x58)
-      {
-        // We found a timestamp
-        timestampLength = payload[indexTouchLength + 2];
-        for (int8_t i = timeStampLength; i > 0; i--)
-        {
-          msg->timestamp |= payload[indexTouchLength + 2 + i] << (8 * i);
-        }
-        break;
-      }
-        else
-        {
-          indexTouchLength += payload[indexTouchLength + 2];
-          // Keep looking for timestamp
-        }
+
     }
 
     msg->touchCount = (payload[9] - timestampLength) / (touchMetaInformation.touchByteCount + 2);
@@ -699,7 +703,7 @@ void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload)
       uint8_t payloadOffset = 12;
       for (uint8_t j = 0; j < touchMetaInformation.touchByteCount; j++)
       {
-        uint8_t index = (i * (touchMetaInformation.touchByteCount + 2) + payloadOffset;
+        uint8_t index = payloadOffset + j + (i * expectedTouchLength);
         switch (touchMetaInformation.touchDescriptor[j])
         {
           case TouchDescriptor::Id:
@@ -826,9 +830,9 @@ void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload)
           default:
           break;
         }
-        ++payloadOffset;
       }
     }
+  }
 }
 
 void Zforce::ClearBuffer(uint8_t* buffer)
