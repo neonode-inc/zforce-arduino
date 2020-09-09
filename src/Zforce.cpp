@@ -45,6 +45,27 @@ void Zforce::Start(int dr)
 #else
   Wire.begin();
 #endif
+
+  /* Reading of boot complete and sending/reading of touchformat 
+   * can be moved to user side but is by default 
+   * kept here for simplicity for the end user. */
+
+  // Read out potential boot complete notification
+  auto msg = this->GetMessage();
+  if (msg != nullptr)
+  {
+    this->DestroyMessage(msg);
+  }
+
+  // Get the touch descriptor from the sensor in order to deserialize the touch notifications
+  this->TouchFormat();
+  do
+  {
+    msg = this->GetMessage();
+  } while (msg == nullptr);
+
+  this->DestroyMessage(msg);
+ 
 }
 
 int Zforce::Read(uint8_t * payload)
@@ -262,6 +283,23 @@ bool Zforce::DetectionMode(bool mergeTouches, bool reflectiveEdgeFilter)
   return !failed;
 }
 
+bool Zforce::TouchFormat()
+{
+  bool failed = false;
+  uint8_t touchFormat[] = {0xEE, 0x08, 0xEE, 0x06, 0x40, 0x02, 0x02, 0x00, 0x66, 0x00};
+
+  if (Write(touchFormat))
+  {
+    failed = true;
+  }
+  else
+  {
+    lastSentMessage = MessageType::TOUCHFORMATTYPE;
+  }
+
+  return !failed;
+}
+
 
 int Zforce::GetDataReady()
 {
@@ -372,16 +410,23 @@ void Zforce::ParseResponse(uint8_t* payload, Message** msg)
     break;
     case MessageType::FREQUENCYTYPE:
     {
-        (*(msg)) = new FrequencyMessage;
-        (*(msg))->type = MessageType::FREQUENCYTYPE;
-        ParseFrequency((FrequencyMessage*)(*(msg)), payload);
+      (*(msg)) = new FrequencyMessage;
+      (*(msg))->type = MessageType::FREQUENCYTYPE;
+      ParseFrequency((FrequencyMessage*)(*(msg)), payload);
     }
     break;
     case MessageType::DETECTIONMODETYPE:
     {
-        (*(msg)) = new DetectionModeMessage;
-        (*(msg))->type = MessageType::DETECTIONMODETYPE;
-        ParseDetectionMode((DetectionModeMessage*)(*(msg)), payload);
+      (*(msg)) = new DetectionModeMessage;
+      (*(msg))->type = MessageType::DETECTIONMODETYPE;
+      ParseDetectionMode((DetectionModeMessage*)(*(msg)), payload);
+    }
+    break;
+    case MessageType::TOUCHFORMATTYPE:
+    {
+      (*(msg)) = new TouchDescriptorMessage;
+      (*(msg))->type = MessageType::TOUCHFORMATTYPE;
+      ParseTouchDescriptor((TouchDescriptorMessage*)(*(msg)), payload);
     }
     break;
     default:
@@ -390,6 +435,35 @@ void Zforce::ParseResponse(uint8_t* payload, Message** msg)
       (*(msg))->type = MessageType::NONE;
     }
     break;
+  }
+}
+
+void Zforce::ParseTouchDescriptor(TouchDescriptorMessage* msg, uint8_t* payload)
+{
+  uint8_t amountBits = ((payload[11] - 1) * 8) - payload[12];
+
+  uint32_t descr = 0;
+  descr |= payload[13] << 24;
+  descr |= payload[14] << 16;
+  descr |= payload[15] << 8;
+
+  msg->descriptor = new TouchDescriptor[(int)TouchDescriptor::MaxValue];
+  uint8_t bitIndex = 0;
+  uint8_t descIndex = 0;
+  while (bitIndex <= amountBits)
+  {
+    if (descr & (0x80000000 >> bitIndex))
+    {
+      msg->descriptor[descIndex++] = (TouchDescriptor)bitIndex;
+    }
+    bitIndex++;
+  }
+
+  touchMetaInformation.touchDescriptor = new TouchDescriptor[descIndex];
+  touchMetaInformation.touchByteCount = descIndex;
+  for (int i = 0; i < touchMetaInformation.touchByteCount; i++)
+  {
+    touchMetaInformation.touchDescriptor[i] = msg->descriptor[i];
   }
 }
 
@@ -606,19 +680,162 @@ void Zforce::ParseDetectionMode(DetectionModeMessage* msg, uint8_t* payload)
 
 void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload)
 {
-  msg->touchCount = payload[9] / 11; // Calculate the amount of touch objects.
-  msg->touchData = new TouchData[msg->touchCount];
 
-  for(uint8_t i = 0; i < msg->touchCount; i++)
+  if (touchMetaInformation.touchDescriptor == nullptr)
   {
-    msg->touchData[i].id = payload[12 + (i * 11)];
-    msg->touchData[i].event = (TouchEvent)(payload[13 + (i * 11)]);
-    msg->touchData[i].x = payload[14 + (i * 11)] << 8;
-    msg->touchData[i].x |= payload[15 + (i * 11)];
-    msg->touchData[i].y = payload[16 + (i * 11)] << 8;
-    msg->touchData[i].y |= payload[17 + (i * 11)];
-    msg->touchData[i].sizeX = payload[18 + (i * 11)] << 8;
-    msg->touchData[i].sizeX |= payload[19 + (i * 11)];
+    return;
+  } 
+  else
+  {
+    uint8_t expectedTouchLength = touchMetaInformation.touchByteCount + 2;
+    uint8_t timestampLength = (payload[9] % expectedTouchLength);
+    if (timestampLength != 0)
+    {
+      // We have a timestamp
+      timestampLength -= 2; // Remove count for identifier and length byte
+      for (int8_t i = timestampLength - 1; i >= 0; i--) // - 1 to count for off by one error
+      {
+        msg->timestamp |= payload[(payload[1] + 2) - i] << (8 * i);
+      }
+
+    }
+
+    msg->touchCount = (payload[9] - timestampLength) / (touchMetaInformation.touchByteCount + 2);
+    msg->touchData = new TouchData[msg->touchCount];
+    for (uint8_t i = 0; i < msg->touchCount; i++)
+    {
+      uint8_t payloadOffset = 12;
+      for (uint8_t j = 0; j < touchMetaInformation.touchByteCount; j++)
+      {
+        uint8_t index = payloadOffset + j + (i * expectedTouchLength);
+        switch (touchMetaInformation.touchDescriptor[j])
+        {
+          case TouchDescriptor::Id:
+          {
+            msg->touchData[i].id = payload[index];
+            break;
+          }
+          case TouchDescriptor::Event:
+          {
+            msg->touchData[i].event = (TouchEvent)payload[index];
+            break;
+          }
+          case TouchDescriptor::LocXByte1:
+          {
+            msg->touchData[i].x = payload[index];
+            break;
+          }
+          case TouchDescriptor::LocXByte2:
+          {
+            msg->touchData[i].x <<= 8;
+            msg->touchData[i].x |= payload[index];
+            break;
+          }
+          case TouchDescriptor::LocXByte3:
+          {
+            msg->touchData[i].x <<= 8;
+            msg->touchData[i].x |= payload[index];
+            break;
+          }
+          case TouchDescriptor::LocYByte1:
+          {
+            msg->touchData[i].y = payload[index];
+            break;
+          }
+          case TouchDescriptor::LocYByte2:
+          {
+            msg->touchData[i].y <<= 8;
+            msg->touchData[i].y |= payload[index];
+            break;
+          }
+          case TouchDescriptor::LocYByte3:
+          {
+            msg->touchData[i].y <<= 8;
+            msg->touchData[i].y |= payload[index];
+            break;
+          }
+          case TouchDescriptor::LocZByte1:
+          {
+            // No support for Z in Neonode AIR Touch sensor
+            break;
+          }
+          case TouchDescriptor::LocZByte2:
+          {
+            // No support for Z in Neonode AIR Touch sensor
+            break;
+          }
+          case TouchDescriptor::LocZByte3:
+          {
+            // No support for Z in Neonode AIR Touch sensor
+            break;
+          }
+          case TouchDescriptor::SizeXByte1:
+          {
+            msg->touchData[i].sizeX = payload[index];
+            break;
+          }
+          case TouchDescriptor::SizeXByte2:
+          {
+            msg->touchData[i].sizeX <<= 8;
+            msg->touchData[i].sizeX |= payload[index];
+            break;
+          }
+          case TouchDescriptor::SizeXByte3:
+          {
+            msg->touchData[i].sizeX <<= 8;
+            msg->touchData[i].sizeX |= payload[index];
+            break;
+          }
+          case TouchDescriptor::SizeYByte1:
+          {
+            // No support for size Y in Neonode AIR Touch sensor
+            break;
+          }
+          case TouchDescriptor::SizeYByte2:
+          {
+            // No support for size Y in Neonode AIR Touch sensor
+            break;
+          }
+          case TouchDescriptor::SizeYByte3:
+          {
+            // No support for size Y in Neonode AIR Touch sensor
+            break;
+          }
+          case TouchDescriptor::SizeZByte1:
+          {
+            // No support for size Z in Neonode AIR Touch sensor
+            break;
+          }
+          case TouchDescriptor::SizeZByte2:
+          {
+            // No support for size Z in Neonode AIR Touch sensor
+            break;
+          }
+          case TouchDescriptor::SizeZByte3:
+          {
+            // No support for size Z in Neonode AIR Touch sensor
+            break;
+          }
+          case TouchDescriptor::Orientation:
+          {
+            // No support for Orientation in Neonode AIR Touch sensor
+            break;
+          }
+          case TouchDescriptor::Confidence:
+          {
+            // Confidence is reported but should not be used as it is always reported as 100%
+            break;
+          }
+          case TouchDescriptor::Pressure:
+          {
+             // There iws no support for pressure in Neonode AIR Touch sensor
+            break;
+          }
+          default:
+          break;
+        }
+      }
+    }
   }
 }
 

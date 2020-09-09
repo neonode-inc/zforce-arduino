@@ -37,16 +37,8 @@ void setup()
   Serial.println("zforce start");
   zforce.Start(DATA_READY);
 
-  Message* msg = zforce.GetMessage();
-
-  if (msg != NULL)
-  {
-    Serial.println("Received Boot Complete Notification");
-    Serial.print("Message type is: ");
-    Serial.println((int)msg->type);
-    zforce.DestroyMessage(msg);
-  }
-
+  Message* msg = NULL;
+  
   zforce.Enable(true);
 
   msg = zforce.GetMessage();
