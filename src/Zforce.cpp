@@ -701,7 +701,7 @@ void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload)
         uint8_t valueIndex = timestampIndex + timestampLength + 1;
         for (int8_t i = 0; i < timestampLength; i++)
         {
-          timestamp |= payload[valueIndex - i] << (8 * i);
+          msg->timestamp |= payload[valueIndex - i] << (8 * i);
         }
       }
     }
