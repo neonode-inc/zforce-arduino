@@ -45,6 +45,9 @@ void Zforce::Start(int dr)
 #else
   Wire.begin();
 #endif
+  /* Reading of boot complete and sending/reading of touchformat 	
+   * can be moved to user side but is by default 	
+   * kept here for simplicity for the end user. */	
 
   // Read out potential boot complete notification
   auto msg = this->GetMessage();
