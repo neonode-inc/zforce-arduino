@@ -687,24 +687,27 @@ void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload)
   } 
   else
   {
-    uint8_t expectedTouchLength = touchMetaInformation.touchByteCount + 2;
-    uint8_t timestampLength = (payload[9] % expectedTouchLength);
-    if (timestampLength != 0)
+    const uint8_t payloadOffset = 12;
+    const uint8_t expectedTouchLength = touchMetaInformation.touchByteCount + 2;
+    msg->touchCount = payload[9] / expectedTouchLength;
+    msg->touchData = new TouchData[msg->touchCount];
+    
+    if ((payload[1] + 2) > (payloadOffset + (expectedTouchLength * msg->touchCount))) // Check for timestamp
     {
-      // We have a timestamp
-      timestampLength -= 2; // Remove count for identifier and length byte
-      for (int8_t i = timestampLength - 1; i >= 0; i--) // - 1 to count for off by one error
+      uint8_t timestampIndex = payloadOffset + (touchMetaInformation.touchByteCount * msg->touchCount);
+      if (payload[timestampIndex] == 0x58) // Check for timestamp identifier
       {
-        msg->timestamp |= payload[(payload[1] + 2) - i] << (8 * i);
+        uint8_t timestampLength = payload[timestampIndex + 1];
+        uint8_t valueIndex = timestampIndex + timestampLength + 1;
+        for (int8_t i = 0; i < timestampLength; i++)
+        {
+          msg->timestamp |= payload[valueIndex - i] << (8 * i);
+        }
       }
-
     }
 
-    msg->touchCount = (payload[9] - timestampLength) / (touchMetaInformation.touchByteCount + 2);
-    msg->touchData = new TouchData[msg->touchCount];
     for (uint8_t i = 0; i < msg->touchCount; i++)
     {
-      uint8_t payloadOffset = 12;
       for (uint8_t j = 0; j < touchMetaInformation.touchByteCount; j++)
       {
         uint8_t index = payloadOffset + j + (i * expectedTouchLength);
