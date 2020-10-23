@@ -1,3 +1,5 @@
+#include <Arduino.h>
+
 /*
   I2C.h   - I2C library
   Copyright (c) 2011-2012 Wayne Truchsess.  All right reserved.
@@ -54,7 +56,7 @@
 */
 
 
-#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega8__) || defined(__AVR_ATmega328P__) || defined(__AVR_ATmega128__) || defined(__AVR_ATmega2560__)
+#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega8__) || defined(__AVR_ATmega328P__) || defined(__AVR_ATmega128__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega32U4__) 
 #define USE_I2C_LIB 1
 #else
 #define USE_I2C_LIB 0
