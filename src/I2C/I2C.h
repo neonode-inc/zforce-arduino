@@ -1,5 +1,3 @@
-#include <Arduino.h>
-
 /*
   I2C.h   - I2C library
   Copyright (c) 2011-2012 Wayne Truchsess.  All right reserved.
