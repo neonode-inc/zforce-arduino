@@ -56,7 +56,7 @@ typedef struct TouchData
 	TouchEvent event;
 } TouchData;
 
-enum class TouchMode
+enum class TouchModes
 {
 	NORMAL,
 	CLICKONTOUCH,
@@ -168,7 +168,7 @@ typedef struct TouchModeMessage : public Message
 	{
 
 	}
-	TouchMode mode;
+	TouchModes mode;
 	int clickOnTouchRadius;
 	int clickOnTouchTime;
 } TouchModeMessage;
@@ -234,7 +234,7 @@ class Zforce
 		bool ReportedTouches(uint8_t touches);
 		bool DetectionMode(bool mergeTouches, bool reflectiveEdgeFilter);	
 		bool TouchFormat();	
-		bool TouchMode(uint8_t mode, int clickOnTouchRadius, int clickOnTouchTime);
+		bool TouchMode(uint8_t mode, int16_t clickOnTouchRadius, int16_t clickOnTouchTime);
 		int GetDataReady();
 		Message* GetMessage();
 		void DestroyMessage(Message * msg);

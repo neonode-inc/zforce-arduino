@@ -508,7 +508,7 @@ void Zforce::ParseTouchMode(TouchModeMessage* msg, uint8_t* payload)
     switch (payload[i])
     {
       case 0x80: // TouchMode
-        msg->mode = payload[i + 2];
+        msg->mode = (TouchModes)payload[i + 2];
       break;
       case 0x81: // ClickOnTouchTime
         valueLength = payload[i + 1];
