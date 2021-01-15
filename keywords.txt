@@ -5,31 +5,32 @@
 #######################################
 # Datatypes (KEYWORD1)
 #######################################
-MessageType	KEYWORD1
-TouchEvent	KEYWORD1
-TouchData	KEYWORD1
-Message	KEYWORD1
-TouchMessage	KEYWORD1
-EnableMessage	KEYWORD1
+MessageType		KEYWORD1
+TouchEvent		KEYWORD1
+TouchData		KEYWORD1
+Message			KEYWORD1
+TouchMessage		KEYWORD1
+EnableMessage		KEYWORD1
 TouchActiveAreaMessage	KEYWORD1
-FlipXYMessage	KEYWORD1
-ReverseXMessage	KEYWORD1
-ReverseYMessage	KEYWORD1
+FlipXYMessage		KEYWORD1
+ReverseXMessage		KEYWORD1
+ReverseYMessage		KEYWORD1
 ReportedTouchesMessage	KEYWORD1
-Zforce	KEYWORD1
+Zforce			KEYWORD1
 FrequencyMessage 	KEYWORD1
-TouchModeMessage KEYWORD1
+TouchModeMessage 	KEYWORD1
+TouchModes		KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
 #######################################
 
-Start	KEYWORD2
-Read	KEYWORD2
-Write	KEYWORD2
-Enable	KEYWORD2
+Start		KEYWORD2
+Read		KEYWORD2
+Write		KEYWORD2
+Enable		KEYWORD2
 TouchActiveArea	KEYWORD2
-FlipXY	KEYWORD2
+FlipXY		KEYWORD2
 ReverseX	KEYWORD2
 ReverseY	KEYWORD2
 ReportedTouches	KEYWORD2
