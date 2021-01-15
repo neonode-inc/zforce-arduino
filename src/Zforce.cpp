@@ -300,6 +300,29 @@ bool Zforce::TouchFormat()
   return !failed;
 }
 
+bool Zforce::TouchMode(uint8_t mode, int16_t clickOnTouchRadius, int16_t clickOnTouchTime)
+{
+  bool failed = false;
+  uint8_t touchMode[] = {0xEE, 0x14, 0xEE, 0x12, 0x40, 
+                           0x02, 0x02, 0x00, 0x7F, 0x24, 0x0B, 
+                           0x80, 0x01, mode, 0x81, 0x02, 
+                           (uint8_t)(clickOnTouchTime << 8), 
+                           (uint8_t)(clickOnTouchTime & 0xFF), 
+                           0x82, 0x02, (uint8_t)(clickOnTouchRadius << 8), 
+                           (uint8_t)(clickOnTouchRadius & 0xFF) };
+
+  if (Write(touchMode))
+  {
+    failed = true;
+  }
+  else
+  {
+    lastSentMessage = MessageType::TOUCHMODETYPE;
+  }
+
+  return !failed;
+}
+
 
 int Zforce::GetDataReady()
 {
@@ -429,6 +452,13 @@ void Zforce::ParseResponse(uint8_t* payload, Message** msg)
       ParseTouchDescriptor((TouchDescriptorMessage*)(*(msg)), payload);
     }
     break;
+    case MessageType::TOUCHMODETYPE:
+    {
+      (*(msg)) = new TouchModeMessage;
+      (*(msg))->type = MessageType::TOUCHMODETYPE;
+      ParseTouchMode((TouchModeMessage*)(*(msg)), payload);
+    }
+    break;
     default:
     {
       (*(msg)) = new Message;
@@ -464,6 +494,49 @@ void Zforce::ParseTouchDescriptor(TouchDescriptorMessage* msg, uint8_t* payload)
   for (int i = 0; i < touchMetaInformation.touchByteCount; i++)
   {
     touchMetaInformation.touchDescriptor[i] = msg->descriptor[i];
+  }
+}
+
+void Zforce::ParseTouchMode(TouchModeMessage* msg, uint8_t* payload)
+{
+  const uint8_t offset = 9;
+  uint16_t value = 0;
+  uint16_t valueLength = 0;
+
+  for (int i = offset; i < payload[10] + offset; i++)
+  {
+    switch (payload[i])
+    {
+      case 0x80: // TouchMode
+        msg->mode = (TouchModes)payload[i + 2];
+      break;
+      case 0x81: // ClickOnTouchTime
+        valueLength = payload[i + 1];
+        if (valueLength == 2)
+        {
+          msg->clickOnTouchTime = payload[i + 2] << 8;
+          msg->clickOnTouchTime |= payload[i + 3];
+        }
+        else
+        {
+          msg->clickOnTouchTime = payload[i + 2];
+        }
+      break;
+      case 0x82: // ClickOnTouchRadius
+        valueLength = payload[i + 1];
+        if (valueLength == 2)
+        {
+          msg->clickOnTouchRadius = payload[i + 2] << 8;
+          msg->clickOnTouchRadius |= payload[i + 3];
+        }
+        else
+        {
+          msg->clickOnTouchRadius = payload[i + 2];
+        }
+      break;
+      default:
+      break;
+    }
   }
 }
 

@@ -43,9 +43,9 @@ enum class MessageType
 	BOOTCOMPLETETYPE = 8,
 	FREQUENCYTYPE = 9,
 	DETECTIONMODETYPE = 10,
-	TOUCHFORMATTYPE = 11
+	TOUCHFORMATTYPE = 11,
+	TOUCHMODETYPE = 12
 };
-
 
 typedef struct TouchData
 {
@@ -55,6 +55,13 @@ typedef struct TouchData
 	uint8_t id;
 	TouchEvent event;
 } TouchData;
+
+enum class TouchModes
+{
+	NORMAL,
+	CLICKONTOUCH,
+	UNSUPPORTED
+};
 
 typedef struct Message
 {
@@ -155,6 +162,17 @@ typedef struct DetectionModeMessage : public Message
 	bool reflectiveEdgeFilter;
 } DetectionModeMessage;
 
+typedef struct TouchModeMessage : public Message
+{
+	virtual ~TouchModeMessage()
+	{
+
+	}
+	TouchModes mode;
+	int clickOnTouchRadius;
+	int clickOnTouchTime;
+} TouchModeMessage;
+
 enum class TouchDescriptor : uint8_t
 {
 		Id = 0,
@@ -216,6 +234,7 @@ class Zforce
 		bool ReportedTouches(uint8_t touches);
 		bool DetectionMode(bool mergeTouches, bool reflectiveEdgeFilter);	
 		bool TouchFormat();	
+		bool TouchMode(uint8_t mode, int16_t clickOnTouchRadius, int16_t clickOnTouchTime);
 		int GetDataReady();
 		Message* GetMessage();
 		void DestroyMessage(Message * msg);
@@ -232,6 +251,7 @@ class Zforce
 		void ParseDetectionMode(DetectionModeMessage* msg, uint8_t* payload);
 		void ParseResponse(uint8_t* payload, Message** msg);
 		void ParseTouchDescriptor(TouchDescriptorMessage* msg, uint8_t* payload);
+		void ParseTouchMode(TouchModeMessage* msg, uint8_t* payload);
 		void ClearBuffer(uint8_t* buffer);
 		uint8_t buffer[MAX_PAYLOAD];
 		int dataReady;
