@@ -17,7 +17,7 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include <Zforce.h>
-#define DATA_READY 4
+#define DATA_READY 1
 
 void setup()
 {
@@ -101,6 +101,25 @@ void setup()
     Serial.print("Message type is: ");
     Serial.println((int)msg->type);
     Serial.println("Sensor is now enabled and will report touches.");
+  }
+
+  zforce.DestroyMessage(msg);
+
+  zforce.GetEnable();
+
+  msg = zforce.GetMessage();
+
+  do
+  {
+    msg = zforce.GetMessage();
+  } while (msg == NULL);
+
+  if (msg->type == MessageType::ENABLETYPE)
+  {
+    Serial.print("Message type is: ");
+    Serial.println((int)msg->type);
+    const char *enableStatus = ((EnableMessage*)(msg))->enabled ? "Sensor is enabled" : "Sensor is not enabled";
+    Serial.println(enableStatus);
   }
 
   zforce.DestroyMessage(msg);
