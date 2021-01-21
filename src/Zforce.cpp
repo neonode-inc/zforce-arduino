@@ -135,6 +135,23 @@ bool Zforce::Enable(bool isEnabled)
   return !failed;
 }
 
+bool Zforce::GetEnable()
+{
+  bool failed = false;
+  uint8_t enable[] = {0xEE, 0x08, 0xEE, 0x06, 0x40, 0x02, 0x02, 0x00, 0x65, 0x00};
+
+  if (Write(enable)) // We assume that the end user has called GetMessage prior to calling this method
+  {
+    failed = true;
+  }
+  else
+  {
+    lastSentMessage = MessageType::ENABLETYPE;
+  }
+
+  return !failed;
+}
+
 bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16_t maxY)
 {
   bool failed = false;
