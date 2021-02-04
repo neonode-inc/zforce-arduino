@@ -490,9 +490,9 @@ void Zforce::ParseTouchDescriptor(TouchDescriptorMessage* msg, uint8_t* payload)
   uint8_t amountBits = ((payload[11] - 1) * 8) - payload[12];
 
   uint32_t descr = 0;
-  descr |= payload[13] << 24;
-  descr |= payload[14] << 16;
-  descr |= payload[15] << 8;
+  descr |= (uint32_t)payload[13] << 24;
+  descr |= (uint32_t)payload[14] << 16;
+  descr |= (uint32_t)payload[15] << 8;
 
   msg->descriptor = new TouchDescriptor[(int)TouchDescriptor::MaxValue];
   uint8_t bitIndex = 0;
