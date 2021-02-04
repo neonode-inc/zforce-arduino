@@ -1,13 +1,3 @@
-# Bug Report v.1.6.1
-We have been recieving bug reports regarding the decoding of the touch notification in v.1.6.1 and are currently working on a hotfix (v.1.6.2). 
-Please refer to v.1.4.0 for now. We will update the library as soon as possible.
-
-Thank you all for your feedback! 
-
-Best, 
-
-Neonode Support- and Engineering Team.
-
 # Neonode Touch Sensor Module interface library for Arduino
 
 An Arduino library for communicating with the [Neonode Touch Sensor Module] optical touch sensor. Handles the fundamental BER encoded ASN.1 messages.
