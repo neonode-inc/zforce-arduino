@@ -25,8 +25,42 @@ void setup()
   while(!Serial){};
   Serial.println("zforce start");
   zforce.Start(DATA_READY);
-  
-  Message* msg = NULL;
+  init_sensor();
+}
+
+void loop()
+{
+  Message* touch = zforce.GetMessage();
+  if (touch != NULL)
+  {
+    if (touch->type == MessageType::TOUCHTYPE)
+    {
+      for (uint8_t i = 0; i < ((TouchMessage*)touch)->touchCount; i++)
+      {
+        Serial.print("X is: ");
+        Serial.println(((TouchMessage*)touch)->touchData[i].x);
+        Serial.print("Y is: ");
+        Serial.println(((TouchMessage*)touch)->touchData[i].y);
+        Serial.print("ID is: ");
+        Serial.println(((TouchMessage*)touch)->touchData[i].id);
+        Serial.print("Event is: ");
+        Serial.println(((TouchMessage*)touch)->touchData[i].event);
+      }
+    }
+    else if (touch->type == MessageType::BOOTCOMPLETETYPE)
+    {
+      /*If we for some reason we would receive a boot 
+      complete message, the sensor needs to be reinitiated.*/
+      init_sensor(); 
+    }
+
+    zforce.DestroyMessage(touch);
+  }
+}
+
+void init_sensor()
+{
+  Message *msg = NULL;
 
   // Send and read ReverseX
   zforce.ReverseX(false);
@@ -44,7 +78,6 @@ void setup()
   }
 
   zforce.DestroyMessage(msg);
-
 
   // Send and read ReverseY
   zforce.ReverseY(false);
@@ -74,13 +107,13 @@ void setup()
   if (msg->type == MessageType::TOUCHACTIVEAREATYPE)
   {
     Serial.print("minX is: ");
-    Serial.println(((TouchActiveAreaMessage*)msg)->minX);
+    Serial.println(((TouchActiveAreaMessage *)msg)->minX);
     Serial.print("minY is: ");
-    Serial.println(((TouchActiveAreaMessage*)msg)->minY);
+    Serial.println(((TouchActiveAreaMessage *)msg)->minY);
     Serial.print("maxX is: ");
-    Serial.println(((TouchActiveAreaMessage*)msg)->maxX);
+    Serial.println(((TouchActiveAreaMessage *)msg)->maxX);
     Serial.print("maxY is: ");
-    Serial.println(((TouchActiveAreaMessage*)msg)->maxY);
+    Serial.println(((TouchActiveAreaMessage *)msg)->maxY);
   }
 
   zforce.DestroyMessage(msg);
@@ -88,8 +121,6 @@ void setup()
   // Send and read Enable
 
   zforce.Enable(true);
-
-  msg = zforce.GetMessage();
 
   do
   {
@@ -104,47 +135,4 @@ void setup()
   }
 
   zforce.DestroyMessage(msg);
-
-  zforce.GetEnable();
-
-  msg = zforce.GetMessage();
-
-  do
-  {
-    msg = zforce.GetMessage();
-  } while (msg == NULL);
-
-  if (msg->type == MessageType::ENABLETYPE)
-  {
-    Serial.print("Message type is: ");
-    Serial.println((int)msg->type);
-    const char *enableStatus = ((EnableMessage*)(msg))->enabled ? "Sensor is enabled" : "Sensor is not enabled";
-    Serial.println(enableStatus);
-  }
-
-  zforce.DestroyMessage(msg);
-}
-
-void loop()
-{
-  Message* touch = zforce.GetMessage();
-  if (touch != NULL)
-  {
-    if (touch->type == MessageType::TOUCHTYPE)
-    {
-      for (uint8_t i = 0; i < ((TouchMessage*)touch)->touchCount; i++)
-      {
-        Serial.print("X is: ");
-        Serial.println(((TouchMessage*)touch)->touchData[i].x);
-        Serial.print("Y is: ");
-        Serial.println(((TouchMessage*)touch)->touchData[i].y);
-        Serial.print("ID is: ");
-        Serial.println(((TouchMessage*)touch)->touchData[i].id);
-        Serial.print("Event is: ");
-        Serial.println(((TouchMessage*)touch)->touchData[i].event);
-      }
-    }
-
-    zforce.DestroyMessage(touch);
-  }
 }
