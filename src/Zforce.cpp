@@ -340,6 +340,31 @@ bool Zforce::TouchMode(uint8_t mode, int16_t clickOnTouchRadius, int16_t clickOn
   return !failed;
 }
 
+bool Zforce::FloatingProtection(bool enabled, uint16_t time)
+{
+  bool failed = false;
+  uint8_t floatingProtection[] = {0xEE, 0x11, 0XEE, 0x0F, 0x40, 0x02, 0x02, 0x00, 0x73,
+                                  0x09, 0xA8, 0x07, 0x80, 0x01, (uint8_t)(enabled ? 0xFF : 0x00), 0x81,
+                                  0x02, (uint8_t)(time << 8), (uint8_t)(time & 0xFF)};
+
+  for (int i = 0; i < floatingProtection[1] + 2; i++)
+  {
+    Serial.print(floatingProtection[i], HEX);
+    Serial.print(" ");
+  }
+  Serial.println("");
+
+  if (Write(floatingProtection))
+  {
+    failed = true;
+  }
+  else
+  {
+    lastSentMessage = MessageType::FLOATINGPROTECTIONTYPE;
+  }
+
+  return !failed;
+}
 
 int Zforce::GetDataReady()
 {
@@ -474,6 +499,12 @@ void Zforce::ParseResponse(uint8_t* payload, Message** msg)
       (*(msg)) = new TouchModeMessage;
       (*(msg))->type = MessageType::TOUCHMODETYPE;
       ParseTouchMode((TouchModeMessage*)(*(msg)), payload);
+    }
+    case MessageType::FLOATINGPROTECTIONTYPE:
+    {
+      (*(msg)) = new FloatingProtectionMessage;
+      (*(msg))->type = MessageType::FLOATINGPROTECTIONTYPE;
+      ParseFloatingProtection((FloatingProtectionMessage *)(*(msg)), payload);
     }
     break;
     default:
@@ -701,6 +732,46 @@ void Zforce::ParseReportedTouches(ReportedTouchesMessage* msg, uint8_t* payload)
     {
       msg->reportedTouches = payload[i + 2];
       break;
+    }
+  }
+}
+
+void Zforce::ParseFloatingProtection(FloatingProtectionMessage* msg, uint8_t* payload)
+{
+  const uint8_t offset = 10;
+  uint8_t valueLength = 0;
+  msg->time = 0;
+  for (int i = 0; i < payload[1] + 2; i++)
+  {
+    Serial.print(payload[i], HEX);
+    Serial.print(" ");
+  }
+  Serial.println("");
+  for(int i = offset + payload[11]; i < payload[9] + offset; i++)
+  {
+    if (payload[i] == 0xA8) // Identifier floating protection
+    {
+      for (int j = 0; j < payload[i + 1]; j++)
+      {
+        if (payload[i + j] == 0x80) // Identifier floating protection enabled
+        {
+          msg->enabled = (bool)payload[i + j + 2];
+        }
+        if (payload[i + j] == 0x81) // Identifier for time
+        {
+          valueLength = payload[i + j + 1];
+          if (valueLength == 2)
+          {
+            msg->time = payload[i + j + 2] << 8;
+            msg->time |= payload[i + j + 3];
+          }
+          else
+          {
+            msg->time = payload[i + j + 2];
+          }
+          break;
+        }
+      }
     }
   }
 }
