@@ -347,13 +347,6 @@ bool Zforce::FloatingProtection(bool enabled, uint16_t time)
                                   0x09, 0xA8, 0x07, 0x80, 0x01, (uint8_t)(enabled ? 0xFF : 0x00), 0x81,
                                   0x02, (uint8_t)(time << 8), (uint8_t)(time & 0xFF)};
 
-  for (int i = 0; i < floatingProtection[1] + 2; i++)
-  {
-    Serial.print(floatingProtection[i], HEX);
-    Serial.print(" ");
-  }
-  Serial.println("");
-
   if (Write(floatingProtection))
   {
     failed = true;
@@ -741,12 +734,7 @@ void Zforce::ParseFloatingProtection(FloatingProtectionMessage* msg, uint8_t* pa
   const uint8_t offset = 10;
   uint8_t valueLength = 0;
   msg->time = 0;
-  for (int i = 0; i < payload[1] + 2; i++)
-  {
-    Serial.print(payload[i], HEX);
-    Serial.print(" ");
-  }
-  Serial.println("");
+
   for(int i = offset + payload[11]; i < payload[9] + offset; i++)
   {
     if (payload[i] == 0xA8) // Identifier floating protection
