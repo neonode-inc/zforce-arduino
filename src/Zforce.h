@@ -44,7 +44,8 @@ enum class MessageType
 	FREQUENCYTYPE = 9,
 	DETECTIONMODETYPE = 10,
 	TOUCHFORMATTYPE = 11,
-	TOUCHMODETYPE = 12
+	TOUCHMODETYPE = 12,
+	FLOATINGPROTECTIONTYPE = 13
 };
 
 typedef struct TouchData
@@ -212,6 +213,16 @@ typedef struct TouchDescriptorMessage : public Message
 
 } TouchDescriptorMessage;
 
+typedef struct FloatingProtectionMessage : public TouchModeMessage
+{
+	virtual ~FloatingProtectionMessage()
+	{
+
+	}
+	bool enabled;
+	uint16_t time;
+};
+
 typedef struct TouchMetaInformation
 {
 	TouchDescriptor *touchDescriptor;
@@ -236,6 +247,7 @@ class Zforce
 		bool DetectionMode(bool mergeTouches, bool reflectiveEdgeFilter);	
 		bool TouchFormat();	
 		bool TouchMode(uint8_t mode, int16_t clickOnTouchRadius, int16_t clickOnTouchTime);
+		bool FloatingProtection(bool enabled, uint16_t time);
 		int GetDataReady();
 		Message* GetMessage();
 		void DestroyMessage(Message * msg);
@@ -253,6 +265,7 @@ class Zforce
 		void ParseResponse(uint8_t* payload, Message** msg);
 		void ParseTouchDescriptor(TouchDescriptorMessage* msg, uint8_t* payload);
 		void ParseTouchMode(TouchModeMessage* msg, uint8_t* payload);
+		void ParseFloatingProtection(FloatingProtectionMessage* msg, uint8_t* payload);
 		void ClearBuffer(uint8_t* buffer);
 		uint8_t buffer[MAX_PAYLOAD];
 		int dataReady;
