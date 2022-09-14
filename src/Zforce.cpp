@@ -152,7 +152,7 @@ bool Zforce::GetEnable()
   return !failed;
 }
 
-bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16_t maxY)
+bool Zforce::TouchActiveArea(uint16_t lowerBoundX, uint16_t lowerBoundY, uint16_t upperBoundX, uint16_t upperBoundY)
 {
   bool failed = false;
 
@@ -160,10 +160,10 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
 
   uint8_t touchActiveArea[] = {0xEE, length + 10, 0xEE, length + 8,
                                0x40, 0x02, 0x02, 0x00, 0x73, length + 2, 0xA2, length,
-                               0x80, 0x02, (uint8_t)(minX >> 8), (uint8_t)(minX & 0xFF),
-                               0x81, 0x02, (uint8_t)(minY >> 8), (uint8_t)(minY & 0xFF),
-                               0x82, 0x02, (uint8_t)(maxX >> 8), (uint8_t)(maxX & 0xFF),
-                               0x83, 0x02, (uint8_t)(maxY >> 8), (uint8_t)(maxY & 0xFF)};
+                               0x80, 0x02, (uint8_t)(lowerBoundX >> 8), (uint8_t)(lowerBoundX & 0xFF),
+                               0x81, 0x02, (uint8_t)(lowerBoundY >> 8), (uint8_t)(lowerBoundY & 0xFF),
+                               0x82, 0x02, (uint8_t)(upperBoundX >> 8), (uint8_t)(upperBoundX & 0xFF),
+                               0x83, 0x02, (uint8_t)(upperBoundY >> 8), (uint8_t)(upperBoundY & 0xFF)};
 
   if (Write(touchActiveArea)) // We assume that the end user has called GetMessage prior to calling this method
   {
@@ -633,11 +633,11 @@ void Zforce::ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload)
   uint16_t value = 0;
   uint16_t valueLength = 0;
 
-  for (int i = offset; i < payload[11] + offset; i++) // 10 = index for SubTouchActiveArea struct, 11 index for length of SubTouchActiveArea struct
+  for (int i = offset; i < payload[11] + offset; i++) // 10 = index for TouchActiveArea struct, 11 index for length of TouchActiveArea struct
   {
     switch (payload[i])
     {
-      case 0x80: // MinX
+      case 0x80: // LowerBoundX
         valueLength = payload[i + 1];
         if (valueLength == 2)
         {
@@ -648,10 +648,10 @@ void Zforce::ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload)
         {
           value = payload[i + 2];
         }
-        msg->minX = value;
+        msg->lowerBoundX = value;
       break;
 
-      case 0x81: // MinY
+      case 0x81: // LowerBoundY
         valueLength = payload[i + 1];
         if (valueLength == 2)
         {
@@ -662,10 +662,10 @@ void Zforce::ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload)
         {
           value = payload[i + 2];
         }
-        msg->minY = value;
+        msg->lowerBoundY = value;
       break;
 
-      case 0x82: // MaxX
+      case 0x82: // UpperBoundX
         valueLength = payload[i + 1];
         if (valueLength == 2)
         {
@@ -676,10 +676,10 @@ void Zforce::ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload)
         {
           value = payload[i + 2];
         }
-        msg->maxX = value;
+        msg->upperBoundX = value;
       break;
 
-      case 0x83: // MaxY
+      case 0x83: // UpperBoundY
         valueLength = payload[i + 1];
         if (valueLength == 2)
         {
@@ -690,7 +690,7 @@ void Zforce::ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload)
         {
           value = payload[i + 2];
         }
-        msg->maxY = value;
+        msg->upperBoundY = value;
       break;
 
       default:
@@ -805,7 +805,7 @@ void Zforce::ParseFlipXY(FlipXYMessage* msg, uint8_t* payload)
 
 void Zforce::ParseDetectionMode(DetectionModeMessage* msg, uint8_t* payload)
 {
-  uint8_t offset = payload[11] + 11; // 11 = Index for SubTouchActiveArea length
+  uint8_t offset = payload[11] + 11; // 11 = Index for TouchActiveArea length
   offset += payload[offset + 2]; // Add the length of the following Sequence to the offset
   const uint8_t length = payload[1] + 2;
 
