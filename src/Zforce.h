@@ -100,10 +100,10 @@ typedef struct TouchActiveAreaMessage : public Message
 	{
 		
 	}
-	uint16_t minX;
-	uint16_t minY;
-	uint16_t maxX;
-	uint16_t maxY;
+	uint16_t lowerBoundX;
+	uint16_t lowerBoundY;
+	uint16_t upperBoundX;
+	uint16_t upperBoundY;
 } TouchActiveAreaMessage;
 
 typedef struct FrequencyMessage : public Message
@@ -238,7 +238,7 @@ class Zforce
 		int Write(uint8_t* payload);
 		bool Enable(bool isEnabled);
 		bool GetEnable();
-		bool TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16_t maxY);
+		bool TouchActiveArea(uint16_t lowerBoundX, uint16_t lowerBoundY, uint16_t upperBoundX, uint16_t upperBoundY);
 		bool FlipXY(bool isFlipped);
 		bool ReverseX(bool isReversed);
 		bool ReverseY(bool isReversed);
