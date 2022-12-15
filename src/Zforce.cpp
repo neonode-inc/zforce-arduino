@@ -120,10 +120,21 @@ int Zforce::Write(uint8_t* payload)
 bool Zforce::Enable(bool isEnabled)
 {
   bool failed = false;
+  int returnCode;
 
-  uint8_t enable[] = {0xEE, 0x0A, 0xEE, 0x08, 0x40, 0x02, 0x02, 0x00, 0x65, 0x02, (uint8_t)(isEnabled ? 0x81 : 0x80), 0x00};
+  uint8_t enable[] =  {0xEE, 0x0B, 0xEE, 0x09, 0x40, 0x02, 0x02, 0x00, 0x65, 0x03, 0x81, 0x01, 0x00};
+  uint8_t disable[] = {0xEE, 0x0A, 0xEE, 0x08, 0x40, 0x02, 0x02, 0x00, 0x65, 0x02, 0x80, 0x00};
 
-  if (Write(enable)) // We assume that the end user has called GetMessage prior to calling this method
+  if (isEnabled)
+  {
+    returnCode = Write(enable); // We assume that the end user has called GetMessage prior to calling this method
+  }
+  else 
+  {
+    returnCode = Write(disable);
+  }
+
+  if (returnCode != 0)
   {
     failed = true;
   }
