@@ -18,7 +18,7 @@
 */
 #pragma once
 
-#define MAX_PAYLOAD 127
+#define MAX_PAYLOAD 255
 #define ZFORCE_DEFAULT_I2C_ADDRESS 0x50
 
 enum TouchEvent
