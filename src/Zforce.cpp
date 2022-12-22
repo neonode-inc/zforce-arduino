@@ -89,12 +89,12 @@ int Zforce::Read(uint8_t * payload)
 
   return status; // return 0 if success, otherwise error code according to Atmel Data Sheet
 #else
-  Wire.requestFrom(ZFORCE_I2C_ADDRESS, 2);
+  Wire.requestFrom(ZFORCE_DEFAULT_I2C_ADDRESS, 2);
   payload[0] = Wire.read();
   payload[1] = Wire.read();
   
   int index = 2;
-  Wire.requestFrom(ZFORCE_I2C_ADDRESS, payload[1]);
+  Wire.requestFrom(ZFORCE_DEFAULT_I2C_ADDRESS, payload[1]);
   while (Wire.available())
   {
     payload[index++] = Wire.read();
