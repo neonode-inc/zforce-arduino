@@ -37,6 +37,12 @@ Zforce::Zforce()
 
 void Zforce::Start(int dr)
 {
+  Start(dr, ZFORCE_DEFAULT_I2C_ADDRESS);
+}
+
+void Zforce::Start(int dr, int i2cAddress)
+{
+  this->i2cAddress = i2cAddress;
   dataReady = dr;
   pinMode(dataReady, INPUT);
 #if USE_I2C_LIB == 1
@@ -73,22 +79,22 @@ int Zforce::Read(uint8_t * payload)
 #if USE_I2C_LIB == 1
   int status = 0;
 
-  status = I2c.read(ZFORCE_I2C_ADDRESS, 2);
+  status = I2c.read(this->i2cAddress, 2);
 
   // Read the 2 I2C header bytes.
   payload[0] = I2c.receive();
   payload[1] = I2c.receive();
 
-  status = I2c.read(ZFORCE_I2C_ADDRESS, payload[1], &payload[2]);
+  status = I2c.read(this->i2cAddress, payload[1], &payload[2]);
 
   return status; // return 0 if success, otherwise error code according to Atmel Data Sheet
 #else
-  Wire.requestFrom(ZFORCE_I2C_ADDRESS, 2);
+  Wire.requestFrom(this->i2cAddress, 2);
   payload[0] = Wire.read();
   payload[1] = Wire.read();
   
   int index = 2;
-  Wire.requestFrom(ZFORCE_I2C_ADDRESS, payload[1]);
+  Wire.requestFrom(this->i2cAddress, payload[1]);
   while (Wire.available())
   {
     payload[index++] = Wire.read();
@@ -105,11 +111,11 @@ int Zforce::Write(uint8_t* payload)
 {
 #if USE_I2C_LIB == 1
   int len = payload[1] + 1;
-  int status = I2c.write(ZFORCE_I2C_ADDRESS, payload[0], &payload[1], len);
+  int status = I2c.write(this->i2cAddress, payload[0], &payload[1], len);
 
   return status; // return 0 if success, otherwise error code according to Atmel Data Sheet
 #else
-  Wire.beginTransmission(ZFORCE_I2C_ADDRESS);
+  Wire.beginTransmission(this->i2cAddress);
   Wire.write(payload, payload[1] + 2);
   Wire.endTransmission();
 
@@ -504,6 +510,7 @@ void Zforce::ParseResponse(uint8_t* payload, Message** msg)
       (*(msg))->type = MessageType::TOUCHMODETYPE;
       ParseTouchMode((TouchModeMessage*)(*(msg)), payload);
     }
+    break;
     case MessageType::FLOATINGPROTECTIONTYPE:
     {
       (*(msg)) = new FloatingProtectionMessage;
@@ -552,7 +559,6 @@ void Zforce::ParseTouchDescriptor(TouchDescriptorMessage* msg, uint8_t* payload)
 void Zforce::ParseTouchMode(TouchModeMessage* msg, uint8_t* payload)
 {
   const uint8_t offset = 9;
-  uint16_t value = 0;
   uint16_t valueLength = 0;
 
   for (int i = offset; i < payload[10] + offset; i++)

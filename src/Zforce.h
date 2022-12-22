@@ -19,7 +19,7 @@
 #pragma once
 
 #define MAX_PAYLOAD 255
-#define ZFORCE_I2C_ADDRESS 0x50
+#define ZFORCE_DEFAULT_I2C_ADDRESS 0x50
 
 enum TouchEvent
 {
@@ -213,7 +213,7 @@ typedef struct TouchDescriptorMessage : public Message
 
 } TouchDescriptorMessage;
 
-typedef struct FloatingProtectionMessage : public TouchModeMessage
+typedef struct FloatingProtectionMessage : public Message
 {
 	virtual ~FloatingProtectionMessage()
 	{
@@ -221,7 +221,7 @@ typedef struct FloatingProtectionMessage : public TouchModeMessage
 	}
 	bool enabled;
 	uint16_t time;
-};
+} FloatingPointMessage;
 
 typedef struct TouchMetaInformation
 {
@@ -234,6 +234,7 @@ class Zforce
     public:
 		Zforce();
 		void Start(int dr);
+		void Start(int dr, int i2cAddress);
 		int Read(uint8_t* payload);
 		int Write(uint8_t* payload);
 		bool Enable(bool isEnabled);
@@ -269,6 +270,7 @@ class Zforce
 		void ClearBuffer(uint8_t* buffer);
 		uint8_t buffer[MAX_PAYLOAD];
 		int dataReady;
+		int i2cAddress;
 		volatile MessageType lastSentMessage;
 		TouchMetaInformation touchMetaInformation;
 };
