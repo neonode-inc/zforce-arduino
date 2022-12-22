@@ -510,6 +510,7 @@ void Zforce::ParseResponse(uint8_t* payload, Message** msg)
       (*(msg))->type = MessageType::TOUCHMODETYPE;
       ParseTouchMode((TouchModeMessage*)(*(msg)), payload);
     }
+    break;
     case MessageType::FLOATINGPROTECTIONTYPE:
     {
       (*(msg)) = new FloatingProtectionMessage;
@@ -558,7 +559,6 @@ void Zforce::ParseTouchDescriptor(TouchDescriptorMessage* msg, uint8_t* payload)
 void Zforce::ParseTouchMode(TouchModeMessage* msg, uint8_t* payload)
 {
   const uint8_t offset = 9;
-  uint16_t value = 0;
   uint16_t valueLength = 0;
 
   for (int i = offset; i < payload[10] + offset; i++)

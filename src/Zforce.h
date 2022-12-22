@@ -213,7 +213,7 @@ typedef struct TouchDescriptorMessage : public Message
 
 } TouchDescriptorMessage;
 
-typedef struct FloatingProtectionMessage : public TouchModeMessage
+typedef struct FloatingProtectionMessage : public Message
 {
 	virtual ~FloatingProtectionMessage()
 	{
@@ -221,7 +221,7 @@ typedef struct FloatingProtectionMessage : public TouchModeMessage
 	}
 	bool enabled;
 	uint16_t time;
-};
+} FloatingPointMessage;
 
 typedef struct TouchMetaInformation
 {
