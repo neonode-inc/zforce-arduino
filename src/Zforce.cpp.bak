@@ -71,6 +71,7 @@ void Zforce::Start(int dr, int i2cAddress)
   } while (msg == nullptr);
 
   this->DestroyMessage(msg);
+ 
 }
 
 int Zforce::Read(uint8_t * payload)
