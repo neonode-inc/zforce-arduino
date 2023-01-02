@@ -201,7 +201,7 @@ bool Zforce::Frequency(uint16_t idleFrequency, uint16_t fingerFrequency)
     const uint8_t length = 8;
 
     uint8_t frequency[] = { 0xEE, length + 8, 0xEE, length + 6,
-                            0x40, 0x02, 0x02, 0x00, 0x68, length,
+                            0x40, 0x02, 0x00, 0x00, 0x68, length,
                             0x80, 0x02, (uint8_t)(fingerFrequency >> 8), (uint8_t)(fingerFrequency & 0xFF),
                             0x82, 0x02, (uint8_t)(idleFrequency   >> 8), (uint8_t)(idleFrequency   & 0xFF)};
 
