@@ -340,9 +340,9 @@ bool Zforce::TouchMode(uint8_t mode, int16_t clickOnTouchRadius, int16_t clickOn
   uint8_t touchMode[] = {0xEE, 0x14, 0xEE, 0x12, 0x40, 
                            0x02, 0x02, 0x00, 0x7F, 0x24, 0x0B, 
                            0x80, 0x01, mode, 0x81, 0x02, 
-                           (uint8_t)(clickOnTouchTime << 8), 
+                           (uint8_t)(clickOnTouchTime >> 8), 
                            (uint8_t)(clickOnTouchTime & 0xFF), 
-                           0x82, 0x02, (uint8_t)(clickOnTouchRadius << 8), 
+                           0x82, 0x02, (uint8_t)(clickOnTouchRadius >> 8), 
                            (uint8_t)(clickOnTouchRadius & 0xFF) };
 
   if (Write(touchMode))
@@ -362,7 +362,7 @@ bool Zforce::FloatingProtection(bool enabled, uint16_t time)
   bool failed = false;
   uint8_t floatingProtection[] = {0xEE, 0x11, 0XEE, 0x0F, 0x40, 0x02, 0x02, 0x00, 0x73,
                                   0x09, 0xA8, 0x07, 0x80, 0x01, (uint8_t)(enabled ? 0xFF : 0x00), 0x81,
-                                  0x02, (uint8_t)(time << 8), (uint8_t)(time & 0xFF)};
+                                  0x02, (uint8_t)(time >> 8), (uint8_t)(time & 0xFF)};
 
   if (Write(floatingProtection))
   {
