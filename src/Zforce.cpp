@@ -72,6 +72,8 @@ void Zforce::Start(int dr, int i2cAddress)
 
   this->DestroyMessage(msg);
  
+  // Get Device and Platform information
+  this->GetDeviceInformation();
 }
 
 int Zforce::Read(uint8_t * payload)
@@ -329,6 +331,23 @@ bool Zforce::TouchFormat()
   else
   {
     lastSentMessage = MessageType::TOUCHFORMATTYPE;
+  }
+
+  return !failed;
+}
+
+bool Zforce::GetDeviceInformation()
+{
+  bool failed = false;
+  uint8_t deviceInformation[] = {0xEE, 0x08, 0xEE, 0x06, 0x40, 0x02, 0x00, 0x00, 0x6C, 0x00};
+
+  if (Write(deviceInformation))
+  {
+    failed = true;
+  }
+  else
+  {
+    lastSentMessage = MessageType::DEVICEINFORMATIONTYPE;
   }
 
   return !failed;

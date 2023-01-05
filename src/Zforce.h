@@ -252,6 +252,7 @@ class Zforce
 		int GetDataReady();
 		Message* GetMessage();
 		void DestroyMessage(Message * msg);
+        bool GetDeviceInformation();
     private:
 		Message* VirtualParse(uint8_t* payload);
 		void ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload);
