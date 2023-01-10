@@ -350,8 +350,7 @@ bool Zforce::TouchMode(uint8_t mode, int16_t clickOnTouchRadius, int16_t clickOn
   uint8_t index = 17;
   if (timeLength == 2)
   {
-    touchMode[index] = serializedTime[1];
-    index++;
+    touchMode[index++] = serializedTime[1];
   }
 
   touchMode[index++] = 0x82;
