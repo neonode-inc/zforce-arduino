@@ -360,9 +360,18 @@ bool Zforce::TouchMode(uint8_t mode, int16_t clickOnTouchRadius, int16_t clickOn
 bool Zforce::FloatingProtection(bool enabled, uint16_t time)
 {
   bool failed = false;
-  uint8_t floatingProtection[] = {0xEE, 0x11, 0XEE, 0x0F, 0x40, 0x02, 0x02, 0x00, 0x73,
-                                  0x09, 0xA8, 0x07, 0x80, 0x01, (uint8_t)(enabled ? 0xFF : 0x00), 0x81,
-                                  0x02, (uint8_t)(time >> 8), (uint8_t)(time & 0xFF)};
+  uint8_t timeLength = time < 128 ? 1 : 2;
+  uint8_t serializedTime[timeLength];
+    
+  SerializeInt(time, serializedTime);
+  uint8_t floatingProtection[17 + timeLength] = {0xEE, (uint8_t)(15 + timeLength), 0XEE, (uint8_t)(13 + timeLength), 0x40, 0x02, 0x02, 0x00, 0x73,
+                                  (uint8_t)(7 + timeLength), 0xA8, (uint8_t)(5 + timeLength), 0x80, 0x01, (uint8_t)(enabled ? 0xFF : 0x00), 0x81,
+                                  timeLength, serializedTime[0]};
+
+  if (timeLength == 2)
+  {
+    floatingProtection[18] = serializedTime[1];
+  }
 
   if (Write(floatingProtection))
   {
@@ -1011,6 +1020,19 @@ void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload)
 void Zforce::ClearBuffer(uint8_t* buffer)
 {
   memset(buffer, 0, MAX_PAYLOAD);
+}
+
+void Zforce::SerializeInt(uint16_t value, uint8_t* serialized)
+{
+  if (value < 128)
+  {
+    serialized[0] = (uint8_t)(value & 0xFF);
+  }
+  else
+  {
+    serialized[0] = (uint8_t)(value >> 8);
+    serialized[1] = (uint8_t)(value & 0xFF);
+  }
 }
 
 Zforce zforce = Zforce();
