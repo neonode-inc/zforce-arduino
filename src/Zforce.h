@@ -268,6 +268,7 @@ class Zforce
 		void ParseTouchMode(TouchModeMessage* msg, uint8_t* payload);
 		void ParseFloatingProtection(FloatingProtectionMessage* msg, uint8_t* payload);
 		void ClearBuffer(uint8_t* buffer);
+		uint8_t SerializeInt(int32_t value, uint8_t* serialized);
 		uint8_t buffer[MAX_PAYLOAD];
 		int dataReady;
 		int i2cAddress;
