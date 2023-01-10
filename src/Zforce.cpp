@@ -337,13 +337,31 @@ bool Zforce::TouchFormat()
 bool Zforce::TouchMode(uint8_t mode, int16_t clickOnTouchRadius, int16_t clickOnTouchTime)
 {
   bool failed = false;
-  uint8_t touchMode[] = {0xEE, 0x14, 0xEE, 0x12, 0x40, 
-                           0x02, 0x02, 0x00, 0x7F, 0x24, 0x0B, 
-                           0x80, 0x01, mode, 0x81, 0x02, 
-                           (uint8_t)(clickOnTouchTime >> 8), 
-                           (uint8_t)(clickOnTouchTime & 0xFF), 
-                           0x82, 0x02, (uint8_t)(clickOnTouchRadius >> 8), 
-                           (uint8_t)(clickOnTouchRadius & 0xFF) };
+  uint8_t serializedTime[2];
+  uint8_t serializedRadius[2];
+    
+  uint8_t timeLength = SerializeInt(clickOnTouchTime, serializedTime);
+  uint8_t radiusLength = SerializeInt(clickOnTouchRadius, serializedRadius);
+  uint8_t combinedLength = timeLength + radiusLength;
+  uint8_t touchMode[18 + combinedLength] = {0xEE, (uint8_t)(16 + combinedLength), 0xEE, (uint8_t)(14 + combinedLength), 0x40, 
+                           0x02, 0x02, 0x00, 0x7F, 0x24, (uint8_t)(7 + combinedLength), 
+                           0x80, 0x01, mode, 0x81, timeLength, serializedTime[0] };
+
+  uint8_t index = 17;
+  if (timeLength == 2)
+  {
+    touchMode[index] = serializedTime[1];
+    index++;
+  }
+
+  touchMode[index++] = 0x82;
+  touchMode[index++] = radiusLength;
+  touchMode[index++] = serializedRadius[0];
+
+  if (radiusLength == 2)
+  {
+    touchMode[index] = serializedRadius[1];
+  }
 
   if (Write(touchMode))
   {
@@ -360,11 +378,9 @@ bool Zforce::TouchMode(uint8_t mode, int16_t clickOnTouchRadius, int16_t clickOn
 bool Zforce::FloatingProtection(bool enabled, uint16_t time)
 {
   bool failed = false;
-  uint8_t timeLength = time < 128 ? 1 : 2;
-  uint8_t serializedTime[timeLength];
-    
-  SerializeInt(time, serializedTime);
-  uint8_t floatingProtection[17 + timeLength] = {0xEE, (uint8_t)(15 + timeLength), 0XEE, (uint8_t)(13 + timeLength), 0x40, 0x02, 0x02, 0x00, 0x73,
+  uint8_t serializedTime[2];
+  uint8_t timeLength = SerializeInt(time, serializedTime);
+  uint8_t floatingProtection[17 + timeLength] = {0xEE, (uint8_t)(15 + timeLength), 0xEE, (uint8_t)(13 + timeLength), 0x40, 0x02, 0x02, 0x00, 0x73,
                                   (uint8_t)(7 + timeLength), 0xA8, (uint8_t)(5 + timeLength), 0x80, 0x01, (uint8_t)(enabled ? 0xFF : 0x00), 0x81,
                                   timeLength, serializedTime[0]};
 
@@ -1022,16 +1038,18 @@ void Zforce::ClearBuffer(uint8_t* buffer)
   memset(buffer, 0, MAX_PAYLOAD);
 }
 
-void Zforce::SerializeInt(uint16_t value, uint8_t* serialized)
+uint8_t Zforce::SerializeInt(int32_t value, uint8_t* serialized)
 {
   if (value < 128)
   {
     serialized[0] = (uint8_t)(value & 0xFF);
+    return 1;
   }
   else
   {
     serialized[0] = (uint8_t)(value >> 8);
     serialized[1] = (uint8_t)(value & 0xFF);
+    return 2;
   }
 }
 
