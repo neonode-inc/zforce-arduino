@@ -20,6 +20,10 @@
 
 #define MAX_PAYLOAD 255
 #define ZFORCE_DEFAULT_I2C_ADDRESS 0x50
+// APPLICATION 12 SEQUENCE
+#define ASN1DEVICEINFORMATION 0x6C
+// CONTEXT 0 SEQUENCE
+#define ASN1PLATFORMINFORMATION 0xA0
 
 enum TouchEvent
 {
@@ -45,7 +49,8 @@ enum class MessageType
 	DETECTIONMODETYPE = 10,
 	TOUCHFORMATTYPE = 11,
 	TOUCHMODETYPE = 12,
-	FLOATINGPROTECTIONTYPE = 13
+	FLOATINGPROTECTIONTYPE = 13,
+	PLATFORMINFORMATIONTYPE = 14
 };
 
 typedef struct TouchData
@@ -213,6 +218,19 @@ typedef struct TouchDescriptorMessage : public Message
 
 } TouchDescriptorMessage;
 
+typedef struct PlatformInformationMessage : public Message
+{
+	virtual ~PlatformInformationMessage()
+	{
+		delete[] mcuUniqueIdentifier;
+		mcuUniqueIdentifier = nullptr;
+	}
+	uint8_t firmwareVersionMajor;
+	uint8_t firmwareVersionMinor;
+	char* mcuUniqueIdentifier;
+	uint8_t mcuUniqueIdentifierLength;
+} PlatformInformationMessage;
+
 typedef struct FloatingProtectionMessage : public Message
 {
 	virtual ~FloatingProtectionMessage()
@@ -252,7 +270,10 @@ class Zforce
 		int GetDataReady();
 		Message* GetMessage();
 		void DestroyMessage(Message * msg);
-        bool GetDeviceInformation();
+		bool GetPlatformInformation();
+		uint8_t FirmwareVersionMajor;
+		uint8_t FirmwareVersionMinor;
+		char* MCUUniqueIdentifier;
     private:
 		Message* VirtualParse(uint8_t* payload);
 		void ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload);
@@ -268,7 +289,13 @@ class Zforce
 		void ParseTouchDescriptor(TouchDescriptorMessage* msg, uint8_t* payload);
 		void ParseTouchMode(TouchModeMessage* msg, uint8_t* payload);
 		void ParseFloatingProtection(FloatingProtectionMessage* msg, uint8_t* payload);
+		void ParsePlatformInformation(PlatformInformationMessage* msg, uint8_t* rawData, uint32_t length);
 		void ClearBuffer(uint8_t* buffer);
+		int GetLength(uint8_t* rawData);
+		int GetNumLengthBytes(uint8_t* rawData);
+		void DecodeUint16(uint8_t* rawData, uint32_t* position, uint16_t* value);
+		void DecodeUint32(uint8_t* rawData, uint32_t* position, uint32_t* value);
+		void DecodeOctetString(uint8_t* rawData, uint32_t* position, uint32_t* destinationLength, uint8_t** destination);
 		uint8_t buffer[MAX_PAYLOAD];
 		int dataReady;
 		int i2cAddress;

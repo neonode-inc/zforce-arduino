@@ -72,8 +72,23 @@ void Zforce::Start(int dr, int i2cAddress)
 
   this->DestroyMessage(msg);
  
-  // Get Device and Platform information
-  this->GetDeviceInformation();
+  // Get Platform information
+  this->GetPlatformInformation();
+  do
+  {
+    msg = this->GetMessage();
+  } while (msg == nullptr);
+
+  if (msg->type == MessageType::PLATFORMINFORMATIONTYPE)
+  {
+    this->FirmwareVersionMajor = ((PlatformInformationMessage *)msg)->firmwareVersionMajor;
+    this->FirmwareVersionMinor = ((PlatformInformationMessage *)msg)->firmwareVersionMinor;
+    uint8_t length = ((PlatformInformationMessage *)msg)->mcuUniqueIdentifierLength;
+    this->MCUUniqueIdentifier = new char[length + 1];
+    strncpy(this->MCUUniqueIdentifier, ((PlatformInformationMessage *)msg)->mcuUniqueIdentifier, length);
+    this->MCUUniqueIdentifier[length] = '\0';
+  }
+  this->DestroyMessage(msg);
 }
 
 int Zforce::Read(uint8_t * payload)
@@ -336,18 +351,18 @@ bool Zforce::TouchFormat()
   return !failed;
 }
 
-bool Zforce::GetDeviceInformation()
+bool Zforce::GetPlatformInformation()
 {
   bool failed = false;
-  uint8_t deviceInformation[] = {0xEE, 0x08, 0xEE, 0x06, 0x40, 0x02, 0x00, 0x00, 0x6C, 0x00};
+  uint8_t platformInformation[] = {0xEE, 0x08, 0xEE, 0x06, 0x40, 0x02, 0x00, 0x00, 0x6C, 0x00};
 
-  if (Write(deviceInformation))
+  if (Write(platformInformation))
   {
     failed = true;
   }
   else
   {
-    lastSentMessage = MessageType::DEVICEINFORMATIONTYPE;
+    lastSentMessage = MessageType::PLATFORMINFORMATIONTYPE;
   }
 
   return !failed;
@@ -537,6 +552,13 @@ void Zforce::ParseResponse(uint8_t* payload, Message** msg)
       ParseFloatingProtection((FloatingProtectionMessage *)(*(msg)), payload);
     }
     break;
+    case MessageType::PLATFORMINFORMATIONTYPE:
+    {
+      (*(msg)) = new PlatformInformationMessage;
+      (*(msg))->type = MessageType::PLATFORMINFORMATIONTYPE;
+      ParsePlatformInformation((PlatformInformationMessage*)(*(msg)), &payload[2], payload[1] - 1);
+    }
+    break;
     default:
     {
       (*(msg)) = new Message;
@@ -572,6 +594,62 @@ void Zforce::ParseTouchDescriptor(TouchDescriptorMessage* msg, uint8_t* payload)
   for (int i = 0; i < touchMetaInformation.touchByteCount; i++)
   {
     touchMetaInformation.touchDescriptor[i] = msg->descriptor[i];
+  }
+}
+
+void Zforce::ParsePlatformInformation(PlatformInformationMessage *msg, uint8_t *rawData, uint32_t length)
+{
+  if ((length >= 13) &&
+      (rawData[0] == 0xEF) &&
+      ((GetLength(&rawData[1]) + 2u == length) || (GetLength(&rawData[1]) + 1u == length))) // + 1 for single byte length
+  {
+    rawData += GetNumLengthBytes(&rawData[1]) + 5; // Skip RESPONSE + LENGTH + ADDRESS
+    if ((rawData[0] == ASN1DEVICEINFORMATION) && (rawData[1] > 0))
+    {
+      rawData += GetNumLengthBytes(&rawData[1]) + 1; // Skip ASN1DEVICEINFORMATION + LENGTH
+      if ((rawData[0] == ASN1PLATFORMINFORMATION) && (rawData[1] > 0))
+      {
+        uint32_t platformInformationLength = GetLength(&rawData[1]);
+        rawData += GetNumLengthBytes(&rawData[1]) + 1;
+        uint32_t position = 0;
+        
+        while (position < platformInformationLength)
+        {
+          switch (rawData[position++])
+          {
+          case 0x84: // FirmwareVersionMajor
+            uint16_t firmwareVersionMajor;
+            DecodeUint16(rawData, &position, &firmwareVersionMajor);
+            msg->firmwareVersionMajor = firmwareVersionMajor;
+            break;
+          case 0x85: // FirmwareVersionMinor
+            uint16_t firmwareVersionMinor;
+            DecodeUint16(rawData, &position, &firmwareVersionMinor);
+            msg->firmwareVersionMinor = firmwareVersionMinor;
+            break;
+          case 0x8A: // MCUUniqueIdentifier
+            uint8_t *MCUUniqueIdentifier = nullptr;
+            uint32_t MCUUniqueIdentifierLength;
+            DecodeOctetString(rawData, &position, &MCUUniqueIdentifierLength, &MCUUniqueIdentifier);
+
+            const size_t bufferSize = 100;
+            char buffer[bufferSize];
+            int writeSize = 0;
+            for (size_t i = 0; i < MCUUniqueIdentifierLength; i++)
+            {
+              writeSize += snprintf(buffer + writeSize, bufferSize - writeSize, "%02X", MCUUniqueIdentifier[i]);
+            }
+            msg->mcuUniqueIdentifier = buffer;
+            msg->mcuUniqueIdentifierLength = writeSize;
+            break;
+          default:
+            position += rawData[position];
+            position++;
+            break;
+          }
+        }
+      }
+    }
   }
 }
 
@@ -1030,6 +1108,64 @@ void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload)
 void Zforce::ClearBuffer(uint8_t* buffer)
 {
   memset(buffer, 0, MAX_PAYLOAD);
+}
+
+int Zforce::GetLength(uint8_t* rawData)
+{
+    int numLengthBytes = 0;
+    int length = 0;
+    if (rawData[0] & 0x80) // We have long length form
+    {
+        numLengthBytes = rawData[0] - 0x80;
+        for (int i = 0; i < numLengthBytes; i++)
+        {
+            length += rawData[i + 1];
+        }
+    }
+    else
+    {
+        length = rawData[0];
+    }
+
+    return length;
+}
+
+int Zforce::GetNumLengthBytes(uint8_t* rawData)
+{
+    int numLengthBytes = 1;
+    if (rawData[0] & 0x80) // We have long length form
+    {
+        numLengthBytes = (rawData[0] - 0x80) + 1; // +1 to include the first long form of the length byte
+    }
+
+    return numLengthBytes;
+}
+
+void Zforce::DecodeUint16(uint8_t* rawData, uint32_t* position, uint16_t* value)
+{
+    uint32_t temporary;
+    DecodeUint32(rawData, position, &temporary);
+    *value = (uint16_t)temporary;
+}
+
+void Zforce::DecodeUint32(uint8_t* rawData, uint32_t* position, uint32_t* value)
+{
+    uint32_t length = rawData[(*position)++];
+    *value = rawData[(*position)++];
+    while (--length > 0)
+    {
+        *value <<= 8;
+        *value |= rawData[(*position)++];
+    }
+}
+
+void Zforce::DecodeOctetString(uint8_t* rawData, uint32_t* position, uint32_t* destinationLength, uint8_t** destination)
+{
+    uint32_t length = rawData[(*position)++];
+    *destinationLength = length;
+    *destination = (uint8_t*)malloc(length + 1);
+    memcpy(*destination, &rawData[(*position)], length);
+    (*position) += length;
 }
 
 Zforce zforce = Zforce();
