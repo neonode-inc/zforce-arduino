@@ -612,40 +612,40 @@ void Zforce::ParsePlatformInformation(PlatformInformationMessage *msg, uint8_t *
         uint32_t platformInformationLength = GetLength(&rawData[1]);
         rawData += GetNumLengthBytes(&rawData[1]) + 1;
         uint32_t position = 0;
-        
+
         while (position < platformInformationLength)
         {
           switch (rawData[position++])
           {
-          case 0x84: // FirmwareVersionMajor
-            uint16_t firmwareVersionMajor;
-            DecodeUint16(rawData, &position, &firmwareVersionMajor);
-            msg->firmwareVersionMajor = firmwareVersionMajor;
-            break;
-          case 0x85: // FirmwareVersionMinor
-            uint16_t firmwareVersionMinor;
-            DecodeUint16(rawData, &position, &firmwareVersionMinor);
-            msg->firmwareVersionMinor = firmwareVersionMinor;
-            break;
-          case 0x8A: // MCUUniqueIdentifier
-            uint8_t *MCUUniqueIdentifier = nullptr;
-            uint32_t MCUUniqueIdentifierLength;
-            DecodeOctetString(rawData, &position, &MCUUniqueIdentifierLength, &MCUUniqueIdentifier);
+            case 0x84: // FirmwareVersionMajor
+              uint16_t firmwareVersionMajor;
+              DecodeUint16(rawData, &position, &firmwareVersionMajor);
+              msg->firmwareVersionMajor = firmwareVersionMajor;
+              break;
+            case 0x85: // FirmwareVersionMinor
+              uint16_t firmwareVersionMinor;
+              DecodeUint16(rawData, &position, &firmwareVersionMinor);
+              msg->firmwareVersionMinor = firmwareVersionMinor;
+              break;
+            case 0x8A: // MCUUniqueIdentifier
+              uint8_t *MCUUniqueIdentifier = nullptr;
+              uint32_t MCUUniqueIdentifierLength;
+              DecodeOctetString(rawData, &position, &MCUUniqueIdentifierLength, &MCUUniqueIdentifier);
 
-            const size_t bufferSize = 100;
-            char buffer[bufferSize];
-            int writeSize = 0;
-            for (size_t i = 0; i < MCUUniqueIdentifierLength; i++)
-            {
-              writeSize += snprintf(buffer + writeSize, bufferSize - writeSize, "%02X", MCUUniqueIdentifier[i]);
-            }
-            msg->mcuUniqueIdentifier = buffer;
-            msg->mcuUniqueIdentifierLength = writeSize;
-            break;
-          default:
-            position += rawData[position];
-            position++;
-            break;
+              const size_t bufferSize = 100;
+              char buffer[bufferSize];
+              int writeSize = 0;
+              for (size_t i = 0; i < MCUUniqueIdentifierLength; i++)
+              {
+                writeSize += snprintf(buffer + writeSize, bufferSize - writeSize, "%02X", MCUUniqueIdentifier[i]);
+              }
+              msg->mcuUniqueIdentifier = buffer;
+              msg->mcuUniqueIdentifierLength = writeSize;
+              break;
+            default:
+              position += rawData[position];
+              position++;
+              break;
           }
         }
       }
