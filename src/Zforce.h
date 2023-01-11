@@ -291,6 +291,7 @@ class Zforce
 		void ParseFloatingProtection(FloatingProtectionMessage* msg, uint8_t* payload);
 		void ParsePlatformInformation(PlatformInformationMessage* msg, uint8_t* rawData, uint32_t length);
 		void ClearBuffer(uint8_t* buffer);
+		uint8_t SerializeInt(int32_t value, uint8_t* serialized);
 		int GetLength(uint8_t* rawData);
 		int GetNumLengthBytes(uint8_t* rawData);
 		void DecodeUint16(uint8_t* rawData, uint32_t* position, uint16_t* value);
