@@ -123,6 +123,54 @@ int Zforce::Write(uint8_t* payload)
 #endif
 }
 
+/*
+ * Send the octet array, "payload" as is, without any validation.
+ * The data sent MUST NOT include the i2c header.
+ *
+ * * payload				A pointer to an octet array to send. No validation is done at all.
+ * * payloadLength			The length of the payload to send. No longer than MAX_PAYLOAD.
+ * * receiveBuffer			A pointer to an octet array where the received data will be placed.
+ *							Maybe nullptr, in which case the internal buffer is used.
+ *							The data does NOT include the i2c header.
+ *							It MUST be data following the Neonode ASN.1 protocol.
+ *							The buffer MUST be at least MAX_PAYLOAD size.
+ * * receivedLength			The length of the data returned is placed in this supplied pointer.
+ * * remainingDataLength	If there is more data to read, the length is placed here.
+ *							Use <insert fancy, schmancy method name here> to receive more data.
+ *
+ * * Return value			A pointer to the buffer where the data is placed or nullptr to signal
+ *							an error condition.
+ *							This pointer will either be the same as the receiveBuffer pointer,
+ *							or the internal buffer pointer.
+ *							If the internal buffer is used, make sure to copy the data out of it,
+ *							As it can be overwritten both by receive and sendoperations.
+ */
+uint8_t* Zforce::RawSendAndReceive(uint8_t* payload, uint8_t payloadLength, uint8_t* receiveBuffer, uint8_t *receivedLength, uint16_t *remainingDataLength)
+{
+  if (payload == nullptr)
+  {
+    *receivedLength = 0;
+    return nullptr;
+  }
+
+  auto returnValue = Write(payload);
+  if (returnValue != 0)
+  {
+    *receivedLength = 0;
+    return nullptr;
+  }
+
+  while (GetDataReady() != HIGH)
+  {
+  }
+
+  var recBuffer = receiveBuffer != nullptr ? receiveBuffer : buffer;
+
+  returnValue = Read(recBuffer);
+
+  return returnValue == 0 ? recBuffer : nullptr;
+}
+
 bool Zforce::Enable(bool isEnabled)
 {
   bool failed = false;
