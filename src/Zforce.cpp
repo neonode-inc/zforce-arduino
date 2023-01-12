@@ -64,14 +64,22 @@ void Zforce::Start(int dr, int i2cAddress)
   }
 
   // Get the touch descriptor from the sensor in order to deserialize the touch notifications
-  this->TouchFormat();
-  do
-  {
-    msg = this->GetMessage();
-  } while (msg == nullptr);
+  bool successfulTouchFormatRequest = this->TouchFormat();
 
-  this->DestroyMessage(msg);
- 
+  if (successfulTouchFormatRequest)
+  {
+    do
+    {
+      msg = this->GetMessage();
+    } while (msg == nullptr);
+
+    if (msg->type == MessageType::TOUCHFORMATTYPE && touchMetaInformation.touchDescriptor != nullptr)
+    {
+      this->touchDescriptorInitialized = true;
+    }
+
+    this->DestroyMessage(msg);
+  }
 }
 
 int Zforce::Read(uint8_t * payload)
@@ -441,9 +449,12 @@ Message* Zforce::VirtualParse(uint8_t* payload)
     {
       if (payload[8] == 0xA0) // Check the identifier if this is a touch message or something else.
       {
-        msg = new TouchMessage;
-        msg->type = MessageType::TOUCHTYPE;
-        ParseTouch((TouchMessage*)msg, payload);
+        if (this->touchDescriptorInitialized)
+        {
+          msg = new TouchMessage;
+          msg->type = MessageType::TOUCHTYPE;
+          ParseTouch((TouchMessage*)msg, payload);
+        }
       }
       else if (payload[8] == 0x63)
       {
