@@ -77,7 +77,7 @@ void Zforce::Start(int dr, int i2cAddress)
     {
       this->touchDescriptorInitialized = true;
     }
-
+    
     this->DestroyMessage(msg);
   }
 }
@@ -138,10 +138,28 @@ bool Zforce::Enable(bool isEnabled)
 
   uint8_t enable[] =  {0xEE, 0x0B, 0xEE, 0x09, 0x40, 0x02, 0x02, 0x00, 0x65, 0x03, 0x81, 0x01, 0x00};
   uint8_t disable[] = {0xEE, 0x0A, 0xEE, 0x08, 0x40, 0x02, 0x02, 0x00, 0x65, 0x02, 0x80, 0x00};
+  uint8_t operationMode[] = {0xEE, 0x17, 0xEE, 0x15, 0x40, 0x02, 0x02, 0x00, 0x67, 0x0F, 0x80, 0x01, 0xFF, 0x81, 0x01, 0x00, 0x82, 0x01, 0x00, 0x83, 0x01, 0x00, 0x84, 0x01, 0x00};
 
+  // We assume that the end user has called GetMessage prior to calling this method
   if (isEnabled)
   {
-    returnCode = Write(enable); // We assume that the end user has called GetMessage prior to calling this method
+    returnCode = Write(operationMode);
+    if (returnCode != 0)
+    {
+      failed = true;
+    }
+    else
+    {
+      Message* msg = nullptr;
+      do
+      {
+        msg = this->GetMessage();
+      } while (msg == nullptr);
+
+      this->DestroyMessage(msg);
+
+      returnCode = Write(enable);
+    }
   }
   else 
   {
