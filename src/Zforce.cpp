@@ -217,7 +217,7 @@ uint8_t* Zforce::ReceiveRawMessage(uint8_t* receivedLength, uint16_t *remainingL
     {
       // Since this is the second or later invocation, we do NOT parse the ASN.1, since it
       // may well be in the middle of some data, and we already know the lengths.
-      this->remainingRawLength -= asn1PayloadLength;
+      this->remainingRawLength -= i2cPayloadLength;
       *remainingLength = this->remainingRawLength;
     }
   }
