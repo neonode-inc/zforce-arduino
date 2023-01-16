@@ -274,6 +274,7 @@ class Zforce
 		int i2cAddress;
 		volatile MessageType lastSentMessage;
 		TouchMetaInformation touchMetaInformation;
+		bool touchDescriptorInitialized;
 };
 
 extern Zforce zforce;
