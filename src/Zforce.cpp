@@ -206,7 +206,7 @@ uint8_t* Zforce::ReceiveRawMessage(uint8_t* receivedLength, uint16_t *remainingL
           return nullptr;
         }
       }
-      uint16_t fullAsn1MessageLength = asn1AfterHeaderLength + asn1HeaderLength
+      uint16_t fullAsn1MessageLength = asn1AfterHeaderLength + asn1HeaderLength;
       // Full is the full ASN.1 payload, which can be split over several i2c payloads.
       this->remainingRawLength = fullAsn1MessageLength - i2cPayloadLength;
       *remainingLength = this->remainingRawLength;
