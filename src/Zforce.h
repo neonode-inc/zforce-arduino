@@ -280,6 +280,7 @@ class Zforce
 		uint16_t remainingRawLength;
 		volatile MessageType lastSentMessage;
 		TouchMetaInformation touchMetaInformation;
+		bool touchDescriptorInitialized;
 };
 
 extern Zforce zforce;
