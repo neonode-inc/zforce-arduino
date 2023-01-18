@@ -197,7 +197,7 @@ uint8_t* Zforce::ReceiveRawMessage(uint8_t* receivedLength, uint16_t *remainingL
       else
       {
         // Long form. First byte's top bit is set. The lower 7 bits contain the number of length bytes.
-        // The following 1 or 2 bytes contain the actual length, in Big Endian / Intel Byte Order encoding.
+        // The following 1 or 2 bytes contain the actual length, in Big Endian / Motorola Byte Order encoding.
         uint8_t numberOfLengthBytes = (firstLengthByte & 0x7F);
         asn1HeaderLength += numberOfLengthBytes;
         asn1AfterHeaderLength = buffer[4];
