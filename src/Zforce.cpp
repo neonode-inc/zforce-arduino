@@ -219,7 +219,6 @@ uint8_t* Zforce::ReceiveRawMessage(uint8_t* receivedLength, uint16_t *remainingL
       this->remainingRawLength = fullAsn1MessageLength - i2cPayloadLength;
       *remainingLength = this->remainingRawLength;
       *receivedLength = i2cPayloadLength;
-      return &buffer[2]; // Skipping the i2c header in the response.
     }
     else
     {
@@ -227,14 +226,18 @@ uint8_t* Zforce::ReceiveRawMessage(uint8_t* receivedLength, uint16_t *remainingL
       // may well be in the middle of some data, and we already know the lengths.
       this->remainingRawLength -= i2cPayloadLength;
       *remainingLength = this->remainingRawLength;
-      return &buffer[2]; // Skipping the i2c header in the response.
+      *receivedLength = i2cPayloadLength;
     }
   }
+  else
+  {
+    // Either Data Ready was not high, or the read failed.
+    *remainingLength = 0;
+    *receivedLength = 0;
+    return nullptr;
+  }
 
-  // Either Data Ready was not high, or the read failed.
-  *remainingLength = 0;
-  *receivedLength = 0;
-  return nullptr;
+  return &buffer[2]; // Skipping the i2c header in the response.
 }
 
 bool Zforce::Enable(bool isEnabled)
