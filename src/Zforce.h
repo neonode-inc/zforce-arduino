@@ -18,7 +18,10 @@
 */
 #pragma once
 
+// Largest transaction size, excluding i2c header.
 #define MAX_PAYLOAD 255
+// The buffer must be able to contain both the i2c header, and MAX_PAYLOAD size.
+#define BUFFER_SIZE (MAX_PAYLOAD+2)
 #define ZFORCE_DEFAULT_I2C_ADDRESS 0x50
 
 enum TouchEvent
@@ -237,6 +240,8 @@ class Zforce
 		void Start(int dr, int i2cAddress);
 		int Read(uint8_t* payload);
 		int Write(uint8_t* payload);
+		bool SendRawMessage(uint8_t* payload, uint8_t payloadLength);
+		uint8_t* Zforce::ReceiveRawMessage(uint8_t* receivedLength, uint16_t *remainingLength);
 		bool Enable(bool isEnabled);
 		bool GetEnable();
 		bool TouchActiveArea(uint16_t lowerBoundX, uint16_t lowerBoundY, uint16_t upperBoundX, uint16_t upperBoundY);
@@ -269,9 +274,10 @@ class Zforce
 		void ParseFloatingProtection(FloatingProtectionMessage* msg, uint8_t* payload);
 		void ClearBuffer(uint8_t* buffer);
 		uint8_t SerializeInt(int32_t value, uint8_t* serialized);
-		uint8_t buffer[MAX_PAYLOAD];
+		uint8_t buffer[BUFFER_SIZE];
 		int dataReady;
 		int i2cAddress;
+		uint16_t remainingRawLength;
 		volatile MessageType lastSentMessage;
 		TouchMetaInformation touchMetaInformation;
 		bool touchDescriptorInitialized;
