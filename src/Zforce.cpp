@@ -227,6 +227,7 @@ uint8_t* Zforce::ReceiveRawMessage(uint8_t* receivedLength, uint16_t *remainingL
       // may well be in the middle of some data, and we already know the lengths.
       this->remainingRawLength -= i2cPayloadLength;
       *remainingLength = this->remainingRawLength;
+      return &buffer[2]; // Skipping the i2c header in the response.
     }
   }
 
