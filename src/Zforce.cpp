@@ -33,6 +33,7 @@
 
 Zforce::Zforce()
 {
+  this->remainingRawLength = 0;
 }
 
 void Zforce::Start(int dr)
@@ -64,14 +65,23 @@ void Zforce::Start(int dr, int i2cAddress)
   }
 
   // Get the touch descriptor from the sensor in order to deserialize the touch notifications
-  this->TouchFormat();
-  do
-  {
-    msg = this->GetMessage();
-  } while (msg == nullptr);
+  bool successfulTouchFormatRequest = this->TouchFormat();
 
-  this->DestroyMessage(msg);
- 
+  if (successfulTouchFormatRequest)
+  {
+    do
+    {
+      msg = this->GetMessage();
+    } while (msg == nullptr);
+
+    if (msg->type == MessageType::TOUCHFORMATTYPE && touchMetaInformation.touchDescriptor != nullptr)
+    {
+      this->touchDescriptorInitialized = true;
+    }
+
+    this->DestroyMessage(msg);
+  }
+    
   // Get Platform information
   this->GetPlatformInformation();
   do
@@ -140,6 +150,114 @@ int Zforce::Write(uint8_t* payload)
 #endif
 }
 
+/*
+ * Send the octet array containing an ASN.1 command as is, without validation.
+ * If you need to send more than 255 bytes, call it more times with new data until done.
+ *
+ * payload        Pointer to the octet buffer containing the ASN.1 payload to send.
+ * payloadLength  Length of the data to send.
+ *
+ * Return Value   true for successful send and false if any error occured.
+ *                Sadly, some Arduino i2c drivers do not signal errors.
+ */
+bool Zforce::SendRawMessage(uint8_t* payload, uint8_t payloadLength)
+{
+  if ((payload == nullptr) || (payloadLength == 0))
+  {
+    return false;
+  }
+
+  buffer[0] = 0xEE;
+  buffer[1] = payloadLength;
+  memcpy(&buffer[2], payload, payloadLength);
+
+  return Write(buffer) == 0;
+}
+
+/*
+ * Receive a raw ASN.1 message. The only validation done is decoding the initial ASN.1 payload length
+ * to see if more data should follow.
+ *
+ * receivedLength   A pointer to where the size of the returned data should be placed.
+ * remainingLength  A pointer to where the size of the remaining data should be placed, if any.
+ *
+ * Return value     If an error occured (see comment above for the return value of SendRawMessage),
+ *                  the pointer will be nullptr.
+ *                  A pointer to the ASN.1 payload of the received data is returned.
+ *                  Note, that any subsequent read or write-operation, even notifications, touches, etc will
+ *                  will overwrite the buffer, so make sure to copy any data you want to save.
+ */
+uint8_t* Zforce::ReceiveRawMessage(uint8_t* receivedLength, uint16_t *remainingLength)
+{
+  if ((GetDataReady() == HIGH) && !Read(buffer))
+  {
+    uint8_t i2cPayloadLength = buffer[1];
+    // Check if this is a second or first call.
+    if (this->remainingRawLength == 0)
+    {
+      // This is the first invocation.
+      if (buffer[2] != 0xEF)
+      {
+        // This was not a response.
+        *receivedLength = 0;
+        *remainingLength = 0;
+        return nullptr;
+      }
+      // Check if it's a short, 2, or 3 byte length encoding.
+      uint8_t firstLengthByte = buffer[3];
+      uint16_t asn1AfterHeaderLength;
+      uint8_t asn1HeaderLength = 2; // EE/EF/F0 + First byte of length.
+      if (firstLengthByte < 0x80)
+      {
+        // Short form. Lower 7 bits are the length, but since it's 0, we don't need to & 0x7F to get it.
+        asn1AfterHeaderLength = firstLengthByte;
+      }
+      else
+      {
+        // Long form. First byte's top bit is set. The lower 7 bits contain the number of length bytes.
+        // The following 1 or 2 bytes contain the actual length, in Big Endian / Motorola Byte Order encoding.
+        uint8_t numberOfLengthBytes = (firstLengthByte & 0x7F);
+        asn1HeaderLength += numberOfLengthBytes;
+        asn1AfterHeaderLength = buffer[4];
+        if (numberOfLengthBytes == 2)
+        {
+          asn1AfterHeaderLength <<= 8;
+          asn1AfterHeaderLength += buffer[5];
+        }
+        else if (numberOfLengthBytes != 1)
+        {
+          // The data is most likely corrupted. Valid numbers are 1 and 2.
+          *receivedLength = 0;
+          *remainingLength = 0;
+          return nullptr;
+        }
+      }
+      uint16_t fullAsn1MessageLength = asn1AfterHeaderLength + asn1HeaderLength;
+      // Full is the full ASN.1 payload, which can be split over several i2c payloads.
+      this->remainingRawLength = fullAsn1MessageLength - i2cPayloadLength;
+      *remainingLength = this->remainingRawLength;
+      *receivedLength = i2cPayloadLength;
+    }
+    else
+    {
+      // Since this is the second or later invocation, we do NOT parse the ASN.1, since it
+      // may well be in the middle of some data, and we already know the lengths.
+      this->remainingRawLength -= i2cPayloadLength;
+      *remainingLength = this->remainingRawLength;
+      *receivedLength = i2cPayloadLength;
+    }
+  }
+  else
+  {
+    // Either Data Ready was not high, or the read failed.
+    *remainingLength = 0;
+    *receivedLength = 0;
+    return nullptr;
+  }
+
+  return &buffer[2]; // Skipping the i2c header in the response.
+}
+
 bool Zforce::Enable(bool isEnabled)
 {
   bool failed = false;
@@ -147,10 +265,28 @@ bool Zforce::Enable(bool isEnabled)
 
   uint8_t enable[] =  {0xEE, 0x0B, 0xEE, 0x09, 0x40, 0x02, 0x02, 0x00, 0x65, 0x03, 0x81, 0x01, 0x00};
   uint8_t disable[] = {0xEE, 0x0A, 0xEE, 0x08, 0x40, 0x02, 0x02, 0x00, 0x65, 0x02, 0x80, 0x00};
+  uint8_t operationMode[] = {0xEE, 0x17, 0xEE, 0x15, 0x40, 0x02, 0x02, 0x00, 0x67, 0x0F, 0x80, 0x01, 0xFF, 0x81, 0x01, 0x00, 0x82, 0x01, 0x00, 0x83, 0x01, 0x00, 0x84, 0x01, 0x00};
 
+  // We assume that the end user has called GetMessage prior to calling this method
   if (isEnabled)
   {
-    returnCode = Write(enable); // We assume that the end user has called GetMessage prior to calling this method
+    returnCode = Write(operationMode);
+    if (returnCode != 0)
+    {
+      failed = true;
+    }
+    else
+    {
+      Message* msg = nullptr;
+      do
+      {
+        msg = this->GetMessage();
+      } while (msg == nullptr);
+
+      this->DestroyMessage(msg);
+
+      returnCode = Write(enable);
+    }
   }
   else 
   {
@@ -475,9 +611,12 @@ Message* Zforce::VirtualParse(uint8_t* payload)
     {
       if (payload[8] == 0xA0) // Check the identifier if this is a touch message or something else.
       {
-        msg = new TouchMessage;
-        msg->type = MessageType::TOUCHTYPE;
-        ParseTouch((TouchMessage*)msg, payload);
+        if (this->touchDescriptorInitialized)
+        {
+          msg = new TouchMessage;
+          msg->type = MessageType::TOUCHTYPE;
+          ParseTouch((TouchMessage*)msg, payload);
+        }
       }
       else if (payload[8] == 0x63)
       {
@@ -1131,7 +1270,7 @@ void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload)
 
 void Zforce::ClearBuffer(uint8_t* buffer)
 {
-  memset(buffer, 0, MAX_PAYLOAD);
+  memset(buffer, 0, BUFFER_SIZE);
 }
 
 uint8_t Zforce::SerializeInt(int32_t value, uint8_t* serialized)
