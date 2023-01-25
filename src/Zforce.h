@@ -23,10 +23,6 @@
 // The buffer must be able to contain both the i2c header, and MAX_PAYLOAD size.
 #define BUFFER_SIZE (MAX_PAYLOAD+2)
 #define ZFORCE_DEFAULT_I2C_ADDRESS 0x50
-// APPLICATION 12 SEQUENCE
-#define ASN1DEVICEINFORMATION 0x6C
-// CONTEXT 0 SEQUENCE
-#define ASN1PLATFORMINFORMATION 0xA0
 
 enum TouchEvent
 {
@@ -297,10 +293,6 @@ class Zforce
 		void ParsePlatformInformation(PlatformInformationMessage* msg, uint8_t* rawData, uint32_t length);
 		void ClearBuffer(uint8_t* buffer);
 		uint8_t SerializeInt(int32_t value, uint8_t* serialized);
-		int GetLength(uint8_t* rawData);
-		int GetNumLengthBytes(uint8_t* rawData);
-		void DecodeUint16(uint8_t* rawData, uint32_t* position, uint16_t* value);
-		void DecodeUint32(uint8_t* rawData, uint32_t* position, uint32_t* value);
 		void DecodeOctetString(uint8_t* rawData, uint32_t* position, uint32_t* destinationLength, uint8_t** destination);
 		uint8_t buffer[BUFFER_SIZE];
 		int dataReady;

@@ -762,56 +762,68 @@ void Zforce::ParseTouchDescriptor(TouchDescriptorMessage* msg, uint8_t* payload)
 
 void Zforce::ParsePlatformInformation(PlatformInformationMessage *msg, uint8_t *rawData, uint32_t length)
 {
-  if ((length >= 13) &&
-      (rawData[0] == 0xEF) &&
-      ((GetLength(&rawData[1]) + 2u == length) || (GetLength(&rawData[1]) + 1u == length))) // + 1 for single byte length
+  uint16_t value = 0;
+  uint16_t valueLength = 0;
+  const uint8_t offset = 10;
+
+  rawData += offset;
+
+  uint32_t platformInformationLength = rawData[2];
+
+  rawData += 2 + 1; // PlatformInformation length + PlatformInformation application identifier
+  uint32_t position = 0;
+
+  while (position < platformInformationLength)
   {
-    rawData += GetNumLengthBytes(&rawData[1]) + 5; // Skip RESPONSE + LENGTH + ADDRESS
-    if ((rawData[0] == ASN1DEVICEINFORMATION) && (rawData[1] > 0))
+    switch (rawData[position++])
     {
-      rawData += GetNumLengthBytes(&rawData[1]) + 1; // Skip ASN1DEVICEINFORMATION + LENGTH
-      if ((rawData[0] == ASN1PLATFORMINFORMATION) && (rawData[1] > 0))
+    case 0x84: // FirmwareVersionMajor
+      valueLength = rawData[position++];
+      if (valueLength == 2)
       {
-        uint32_t platformInformationLength = GetLength(&rawData[1]);
-        rawData += GetNumLengthBytes(&rawData[1]) + 1;
-        uint32_t position = 0;
-
-        while (position < platformInformationLength)
-        {
-          switch (rawData[position++])
-          {
-            case 0x84: // FirmwareVersionMajor
-              uint16_t firmwareVersionMajor;
-              DecodeUint16(rawData, &position, &firmwareVersionMajor);
-              msg->firmwareVersionMajor = firmwareVersionMajor;
-              break;
-            case 0x85: // FirmwareVersionMinor
-              uint16_t firmwareVersionMinor;
-              DecodeUint16(rawData, &position, &firmwareVersionMinor);
-              msg->firmwareVersionMinor = firmwareVersionMinor;
-              break;
-            case 0x8A: // MCUUniqueIdentifier
-              uint8_t *MCUUniqueIdentifier = nullptr;
-              uint32_t MCUUniqueIdentifierLength;
-              DecodeOctetString(rawData, &position, &MCUUniqueIdentifierLength, &MCUUniqueIdentifier);
-
-              const size_t bufferSize = 100;
-              char buffer[bufferSize];
-              int writeSize = 0;
-              for (size_t i = 0; i < MCUUniqueIdentifierLength; i++)
-              {
-                writeSize += snprintf(buffer + writeSize, bufferSize - writeSize, "%02X", MCUUniqueIdentifier[i]);
-              }
-              msg->mcuUniqueIdentifier = buffer;
-              msg->mcuUniqueIdentifierLength = writeSize;
-              break;
-            default:
-              position += rawData[position];
-              position++;
-              break;
-          }
-        }
+          value = rawData[position++] << 8;
+          value |= rawData[position++];
       }
+      else
+      {
+          value = rawData[position++];
+      }
+
+      msg->firmwareVersionMajor = value;
+      break;
+    case 0x85: // FirmwareVersionMinor
+      valueLength = rawData[position++];
+      if (valueLength == 2)
+      {
+          value = rawData[position++] << 8;
+          value |= rawData[position++];
+      }
+      else
+      {
+          value = rawData[position++];
+      }
+
+      msg->firmwareVersionMinor = value;
+      break;
+    case 0x8A: // MCUUniqueIdentifier
+      uint8_t *MCUUniqueIdentifier = nullptr;
+      uint32_t MCUUniqueIdentifierLength;
+      DecodeOctetString(rawData, &position, &MCUUniqueIdentifierLength, &MCUUniqueIdentifier);
+
+      const size_t bufferSize = 100;
+      char mcuIdBuffer[bufferSize];
+      int writeSize = 0;
+      for (size_t i = 0; i < MCUUniqueIdentifierLength; i++)
+      {
+          writeSize += snprintf(mcuIdBuffer + writeSize, bufferSize - writeSize, "%02X", MCUUniqueIdentifier[i]);
+      }
+      msg->mcuUniqueIdentifier = mcuIdBuffer;
+      msg->mcuUniqueIdentifierLength = writeSize;
+      break;
+    default:
+      position += rawData[position];
+      position++;
+      break;
     }
   }
 }
@@ -1286,55 +1298,6 @@ uint8_t Zforce::SerializeInt(int32_t value, uint8_t* serialized)
     serialized[1] = (uint8_t)(value & 0xFF);
     return 2;
   }
-}
-
-int Zforce::GetLength(uint8_t* rawData)
-{
-    int numLengthBytes = 0;
-    int length = 0;
-    if (rawData[0] & 0x80) // We have long length form
-    {
-        numLengthBytes = rawData[0] - 0x80;
-        for (int i = 0; i < numLengthBytes; i++)
-        {
-            length += rawData[i + 1];
-        }
-    }
-    else
-    {
-        length = rawData[0];
-    }
-
-    return length;
-}
-
-int Zforce::GetNumLengthBytes(uint8_t* rawData)
-{
-    int numLengthBytes = 1;
-    if (rawData[0] & 0x80) // We have long length form
-    {
-        numLengthBytes = (rawData[0] - 0x80) + 1; // +1 to include the first long form of the length byte
-    }
-
-    return numLengthBytes;
-}
-
-void Zforce::DecodeUint16(uint8_t* rawData, uint32_t* position, uint16_t* value)
-{
-    uint32_t temporary;
-    DecodeUint32(rawData, position, &temporary);
-    *value = (uint16_t)temporary;
-}
-
-void Zforce::DecodeUint32(uint8_t* rawData, uint32_t* position, uint32_t* value)
-{
-    uint32_t length = rawData[(*position)++];
-    *value = rawData[(*position)++];
-    while (--length > 0)
-    {
-        *value <<= 8;
-        *value |= rawData[(*position)++];
-    }
 }
 
 void Zforce::DecodeOctetString(uint8_t* rawData, uint32_t* position, uint32_t* destinationLength, uint8_t** destination)
