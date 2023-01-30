@@ -294,6 +294,8 @@ class Zforce
 		void ClearBuffer(uint8_t* buffer);
 		uint8_t SerializeInt(int32_t value, uint8_t* serialized);
 		void DecodeOctetString(uint8_t* rawData, uint32_t* position, uint32_t* destinationLength, uint8_t** destination);
+		uint16_t GetLength(uint8_t* rawData);
+		uint8_t GetNumLengthBytes(uint8_t* rawData);
 		uint8_t buffer[BUFFER_SIZE];
 		int dataReady;
 		int i2cAddress;

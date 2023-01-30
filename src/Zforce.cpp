@@ -764,13 +764,13 @@ void Zforce::ParsePlatformInformation(PlatformInformationMessage *msg, uint8_t *
 {
   uint16_t value = 0;
   uint16_t valueLength = 0;
-  const uint8_t offset = 10;
 
-  rawData += offset;
+  rawData += GetNumLengthBytes(&rawData[1]) + 5; // Skip response byte + ASN.1 length + address
+  rawData += GetNumLengthBytes(&rawData[1]) + 1; // Skip ASN.1 Device Information + length
+  
+  uint32_t platformInformationLength = GetLength(&rawData[1]);
+  rawData += GetNumLengthBytes(&rawData[1]) + 1; // PlatformInformation length + PlatformInformation application identifier
 
-  uint32_t platformInformationLength = rawData[2];
-
-  rawData += 2 + 1; // PlatformInformation length + PlatformInformation application identifier
   uint32_t position = 0;
 
   while (position < platformInformationLength)
@@ -1307,6 +1307,37 @@ void Zforce::DecodeOctetString(uint8_t* rawData, uint32_t* position, uint32_t* d
     *destination = (uint8_t*)malloc(length + 1);
     memcpy(*destination, &rawData[(*position)], length);
     (*position) += length;
+}
+
+uint16_t Zforce::GetLength(uint8_t* rawData)
+{
+    int numLengthBytes = 0;
+    int length = 0;
+    if (rawData[0] & 0x80) // We have long length form
+    {
+        numLengthBytes = rawData[0] - 0x80;
+        for (int i = 0; i < numLengthBytes; i++)
+        {
+            length += rawData[i + 1];
+        }
+    }
+    else
+    {
+        length = rawData[0];
+    }
+
+    return length;
+}
+
+uint8_t Zforce::GetNumLengthBytes(uint8_t* rawData)
+{
+    uint8_t numLengthBytes = 1;
+    if (rawData[0] & 0x80) // We have long length form
+    {
+        numLengthBytes = (rawData[0] - 0x80) + 1;
+    }
+
+    return numLengthBytes;
 }
 
 Zforce zforce = Zforce();
