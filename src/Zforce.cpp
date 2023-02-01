@@ -78,9 +78,27 @@ void Zforce::Start(int dr, int i2cAddress)
     {
       this->touchDescriptorInitialized = true;
     }
-    
+
     this->DestroyMessage(msg);
   }
+    
+  // Get Platform information
+  this->GetPlatformInformation();
+  do
+  {
+    msg = this->GetMessage();
+  } while (msg == nullptr);
+
+  if (msg->type == MessageType::PLATFORMINFORMATIONTYPE)
+  {
+    this->FirmwareVersionMajor = ((PlatformInformationMessage *)msg)->firmwareVersionMajor;
+    this->FirmwareVersionMinor = ((PlatformInformationMessage *)msg)->firmwareVersionMinor;
+    uint8_t length = ((PlatformInformationMessage *)msg)->mcuUniqueIdentifierLength;
+    this->MCUUniqueIdentifier = new char[length + 1];
+    strncpy(this->MCUUniqueIdentifier, ((PlatformInformationMessage *)msg)->mcuUniqueIdentifier, length);
+    this->MCUUniqueIdentifier[length] = '\0';
+  }
+  this->DestroyMessage(msg);
 }
 
 int Zforce::Read(uint8_t * payload)
@@ -469,6 +487,23 @@ bool Zforce::TouchFormat()
   return !failed;
 }
 
+bool Zforce::GetPlatformInformation()
+{
+  bool failed = false;
+  uint8_t platformInformation[] = {0xEE, 0x08, 0xEE, 0x06, 0x40, 0x02, 0x00, 0x00, 0x6C, 0x00};
+
+  if (Write(platformInformation))
+  {
+    failed = true;
+  }
+  else
+  {
+    lastSentMessage = MessageType::PLATFORMINFORMATIONTYPE;
+  }
+
+  return !failed;
+}
+
 bool Zforce::TouchMode(uint8_t mode, int16_t clickOnTouchRadius, int16_t clickOnTouchTime)
 {
   bool failed = false;
@@ -680,6 +715,13 @@ void Zforce::ParseResponse(uint8_t* payload, Message** msg)
       ParseFloatingProtection((FloatingProtectionMessage *)(*(msg)), payload);
     }
     break;
+    case MessageType::PLATFORMINFORMATIONTYPE:
+    {
+      (*(msg)) = new PlatformInformationMessage;
+      (*(msg))->type = MessageType::PLATFORMINFORMATIONTYPE;
+      ParsePlatformInformation((PlatformInformationMessage*)(*(msg)), &payload[2], payload[1] - 1);
+    }
+    break;
     default:
     {
       (*(msg)) = new Message;
@@ -715,6 +757,74 @@ void Zforce::ParseTouchDescriptor(TouchDescriptorMessage* msg, uint8_t* payload)
   for (int i = 0; i < touchMetaInformation.touchByteCount; i++)
   {
     touchMetaInformation.touchDescriptor[i] = msg->descriptor[i];
+  }
+}
+
+void Zforce::ParsePlatformInformation(PlatformInformationMessage *msg, uint8_t *rawData, uint32_t length)
+{
+  uint16_t value = 0;
+  uint16_t valueLength = 0;
+
+  rawData += GetNumLengthBytes(&rawData[1]) + 5; // Skip response byte + ASN.1 length + address
+  rawData += GetNumLengthBytes(&rawData[1]) + 1; // Skip ASN.1 Device Information + length
+  
+  uint32_t platformInformationLength = GetLength(&rawData[1]);
+  rawData += GetNumLengthBytes(&rawData[1]) + 1; // PlatformInformation length + PlatformInformation application identifier
+
+  uint32_t position = 0;
+
+  while (position < platformInformationLength)
+  {
+    switch (rawData[position++])
+    {
+    case 0x84: // FirmwareVersionMajor
+      valueLength = rawData[position++];
+      if (valueLength == 2)
+      {
+          value = rawData[position++] << 8;
+          value |= rawData[position++];
+      }
+      else
+      {
+          value = rawData[position++];
+      }
+
+      msg->firmwareVersionMajor = value;
+      break;
+    case 0x85: // FirmwareVersionMinor
+      valueLength = rawData[position++];
+      if (valueLength == 2)
+      {
+          value = rawData[position++] << 8;
+          value |= rawData[position++];
+      }
+      else
+      {
+          value = rawData[position++];
+      }
+
+      msg->firmwareVersionMinor = value;
+      break;
+    case 0x8A: // MCUUniqueIdentifier
+      uint8_t *MCUUniqueIdentifier = nullptr;
+      uint32_t MCUUniqueIdentifierLength;
+      DecodeOctetString(rawData, &position, &MCUUniqueIdentifierLength, &MCUUniqueIdentifier);
+
+      const size_t bufferSize = 100;
+      char mcuIdBuffer[bufferSize];
+      int writeSize = 0;
+      for (size_t i = 0; i < MCUUniqueIdentifierLength; i++)
+      {
+          writeSize += snprintf(mcuIdBuffer + writeSize, bufferSize - writeSize, "%02X", MCUUniqueIdentifier[i]);
+      }
+      msg->mcuUniqueIdentifier = mcuIdBuffer;
+      msg->mcuUniqueIdentifierLength = writeSize;
+      break;
+    default:
+      position += rawData[position];
+      position++;
+      break;
+    }
   }
 }
 
@@ -1188,6 +1298,46 @@ uint8_t Zforce::SerializeInt(int32_t value, uint8_t* serialized)
     serialized[1] = (uint8_t)(value & 0xFF);
     return 2;
   }
+}
+
+void Zforce::DecodeOctetString(uint8_t* rawData, uint32_t* position, uint32_t* destinationLength, uint8_t** destination)
+{
+    uint32_t length = rawData[(*position)++];
+    *destinationLength = length;
+    *destination = (uint8_t*)malloc(length + 1);
+    memcpy(*destination, &rawData[(*position)], length);
+    (*position) += length;
+}
+
+uint16_t Zforce::GetLength(uint8_t* rawData)
+{
+    int numLengthBytes = 0;
+    int length = 0;
+    if (rawData[0] & 0x80) // We have long length form
+    {
+        numLengthBytes = rawData[0] - 0x80;
+        for (int i = 0; i < numLengthBytes; i++)
+        {
+            length += rawData[i + 1];
+        }
+    }
+    else
+    {
+        length = rawData[0];
+    }
+
+    return length;
+}
+
+uint8_t Zforce::GetNumLengthBytes(uint8_t* rawData)
+{
+    uint8_t numLengthBytes = 1;
+    if (rawData[0] & 0x80) // We have long length form
+    {
+        numLengthBytes = (rawData[0] - 0x80) + 1;
+    }
+
+    return numLengthBytes;
 }
 
 Zforce zforce = Zforce();

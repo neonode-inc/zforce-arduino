@@ -48,7 +48,8 @@ enum class MessageType
 	DETECTIONMODETYPE = 10,
 	TOUCHFORMATTYPE = 11,
 	TOUCHMODETYPE = 12,
-	FLOATINGPROTECTIONTYPE = 13
+	FLOATINGPROTECTIONTYPE = 13,
+	PLATFORMINFORMATIONTYPE = 14
 };
 
 typedef struct TouchData
@@ -216,6 +217,19 @@ typedef struct TouchDescriptorMessage : public Message
 
 } TouchDescriptorMessage;
 
+typedef struct PlatformInformationMessage : public Message
+{
+	virtual ~PlatformInformationMessage()
+	{
+		delete[] mcuUniqueIdentifier;
+		mcuUniqueIdentifier = nullptr;
+	}
+	uint8_t firmwareVersionMajor;
+	uint8_t firmwareVersionMinor;
+	char* mcuUniqueIdentifier;
+	uint8_t mcuUniqueIdentifierLength;
+} PlatformInformationMessage;
+
 typedef struct FloatingProtectionMessage : public Message
 {
 	virtual ~FloatingProtectionMessage()
@@ -257,6 +271,10 @@ class Zforce
 		int GetDataReady();
 		Message* GetMessage();
 		void DestroyMessage(Message * msg);
+		bool GetPlatformInformation();
+		uint8_t FirmwareVersionMajor;
+		uint8_t FirmwareVersionMinor;
+		char* MCUUniqueIdentifier;
     private:
 		Message* VirtualParse(uint8_t* payload);
 		void ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload);
@@ -272,8 +290,12 @@ class Zforce
 		void ParseTouchDescriptor(TouchDescriptorMessage* msg, uint8_t* payload);
 		void ParseTouchMode(TouchModeMessage* msg, uint8_t* payload);
 		void ParseFloatingProtection(FloatingProtectionMessage* msg, uint8_t* payload);
+		void ParsePlatformInformation(PlatformInformationMessage* msg, uint8_t* rawData, uint32_t length);
 		void ClearBuffer(uint8_t* buffer);
 		uint8_t SerializeInt(int32_t value, uint8_t* serialized);
+		void DecodeOctetString(uint8_t* rawData, uint32_t* position, uint32_t* destinationLength, uint8_t** destination);
+		uint16_t GetLength(uint8_t* rawData);
+		uint8_t GetNumLengthBytes(uint8_t* rawData);
 		uint8_t buffer[BUFFER_SIZE];
 		int dataReady;
 		int i2cAddress;
