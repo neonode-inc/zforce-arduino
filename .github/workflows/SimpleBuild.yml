@@ -2,7 +2,7 @@ name: SimpleBuild
 on: push
 jobs:
   build:
-    name: Test compiling examples for UNO
+    name: Test compiling examples for Arduino UNO
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
