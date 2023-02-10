@@ -255,7 +255,7 @@ class Zforce
 		int Read(uint8_t* payload);
 		int Write(uint8_t* payload);
 		bool SendRawMessage(uint8_t* payload, uint8_t payloadLength);
-		uint8_t* Zforce::ReceiveRawMessage(uint8_t* receivedLength, uint16_t *remainingLength);
+		uint8_t* ReceiveRawMessage(uint8_t* receivedLength, uint16_t *remainingLength);
 		bool Enable(bool isEnabled);
 		bool GetEnable();
 		bool TouchActiveArea(uint16_t lowerBoundX, uint16_t lowerBoundY, uint16_t upperBoundX, uint16_t upperBoundY);
