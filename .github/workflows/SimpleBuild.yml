@@ -4,8 +4,6 @@ jobs:
   build:
     name: Test compiling examples
     runs-on: ubuntu-latest
-    env:
-      REQUIRED_LIBRARIES: Keyboard,Mouse
 
     strategy:
       matrix:
@@ -19,6 +17,7 @@ jobs:
           - arduino-boards-fqbn: neonode:samd:euseniot_neonode_adapter
             platform-url: https://raw.githubusercontent.com/neonode-inc/zforce-arduino-board-devenv/master/package_neonode_index.json
             sketches-exclude: zForceLibraryExampleCode
+            required-libraries: Keyboard,Mouse
 
       fail-fast: false
     steps:
@@ -30,4 +29,4 @@ jobs:
           arduino-board-fqbn: ${{ matrix.arduino-boards-fqbn }}
           platform-url: ${{ matrix.platform-url }}
           sketches-exclude: ${{ matrix.sketches-exclude }}
-          required-libraries: ${{ env.REQUIRED_LIBRARIES }}
+          required-libraries: ${{ matrix.required-libraries }}
