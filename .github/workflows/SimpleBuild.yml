@@ -13,6 +13,10 @@ jobs:
           - arduino-boards-fqbn: arduino:avr:uno
             sketches-exclude: zForceKeyboardMouse
 
+          - arduino-boards-fqbn: neonode:samd:euseniot_neonode_adapter
+            platform-url: https://raw.githubusercontent.com/neonode-inc/zforce-arduino-board-devenv/master/package_neonode_index.json
+            sketches-exclude: zForceLibraryExampleCode
+
       fail-fast: false
     steps:
     - name: Checkout
