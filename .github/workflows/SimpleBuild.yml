@@ -30,3 +30,4 @@ jobs:
           arduino-board-fqbn: ${{ matrix.arduino-boards-fqbn }}
           platform-url: ${{ matrix.platform-url }}
           sketches-exclude: ${{ matrix.sketches-exclude }}
+          required-libraries: ${{ env.REQUIRED_LIBRARIES }}
