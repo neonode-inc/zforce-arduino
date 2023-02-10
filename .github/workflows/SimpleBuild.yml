@@ -4,6 +4,9 @@ jobs:
   build:
     name: Test compiling examples
     runs-on: ubuntu-latest
+    env:
+      REQUIRED_LIBRARIES: Keyboard,Mouse
+
     strategy:
       matrix:
         arduino-boards-fqbn:
