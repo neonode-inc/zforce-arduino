@@ -777,53 +777,59 @@ void Zforce::ParsePlatformInformation(PlatformInformationMessage *msg, uint8_t *
   {
     switch (rawData[position++])
     {
-    case 0x84: // FirmwareVersionMajor
-      valueLength = rawData[position++];
-      if (valueLength == 2)
+      case 0x84: // FirmwareVersionMajor
       {
-          value = rawData[position++] << 8;
-          value |= rawData[position++];
-      }
-      else
-      {
-          value = rawData[position++];
-      }
+        valueLength = rawData[position++];
+        if (valueLength == 2)
+        {
+            value = rawData[position++] << 8;
+            value |= rawData[position++];
+        }
+        else
+        {
+            value = rawData[position++];
+        }
 
-      msg->firmwareVersionMajor = value;
-      break;
-    case 0x85: // FirmwareVersionMinor
-      valueLength = rawData[position++];
-      if (valueLength == 2)
-      {
-          value = rawData[position++] << 8;
-          value |= rawData[position++];
-      }
-      else
-      {
-          value = rawData[position++];
-      }
+        msg->firmwareVersionMajor = value;
+        break;
+      case 0x85: // FirmwareVersionMinor
+        valueLength = rawData[position++];
+        if (valueLength == 2)
+        {
+            value = rawData[position++] << 8;
+            value |= rawData[position++];
+        }
+        else
+        {
+            value = rawData[position++];
+        }
 
-      msg->firmwareVersionMinor = value;
-      break;
-    case 0x8A: // MCUUniqueIdentifier
-      uint8_t *MCUUniqueIdentifier = nullptr;
-      uint32_t MCUUniqueIdentifierLength;
-      DecodeOctetString(rawData, &position, &MCUUniqueIdentifierLength, &MCUUniqueIdentifier);
-
-      const size_t bufferSize = 100;
-      char mcuIdBuffer[bufferSize];
-      int writeSize = 0;
-      for (size_t i = 0; i < MCUUniqueIdentifierLength; i++)
-      {
-          writeSize += snprintf(mcuIdBuffer + writeSize, bufferSize - writeSize, "%02X", MCUUniqueIdentifier[i]);
+        msg->firmwareVersionMinor = value;
+        break;
       }
-      msg->mcuUniqueIdentifier = mcuIdBuffer;
-      msg->mcuUniqueIdentifierLength = writeSize;
-      break;
-    default:
-      position += rawData[position];
-      position++;
-      break;
+      case 0x8A: // MCUUniqueIdentifier
+      {
+        uint8_t *MCUUniqueIdentifier = nullptr;
+        uint32_t MCUUniqueIdentifierLength;
+        DecodeOctetString(rawData, &position, &MCUUniqueIdentifierLength, &MCUUniqueIdentifier);
+
+        const size_t bufferSize = 100;
+        char mcuIdBuffer[bufferSize];
+        int writeSize = 0;
+        for (size_t i = 0; i < MCUUniqueIdentifierLength; i++)
+        {
+            writeSize += snprintf(mcuIdBuffer + writeSize, bufferSize - writeSize, "%02X", MCUUniqueIdentifier[i]);
+        }
+        msg->mcuUniqueIdentifier = mcuIdBuffer;
+        msg->mcuUniqueIdentifierLength = writeSize;
+        break;
+      }
+      default:
+      {
+        position += rawData[position];
+        position++;
+        break;
+      }
     }
   }
 }
