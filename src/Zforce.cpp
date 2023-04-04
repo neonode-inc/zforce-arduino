@@ -1135,6 +1135,7 @@ void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload)
     const uint8_t expectedTouchLength = touchMetaInformation.touchByteCount + 2;
     msg->touchCount = payload[9] / expectedTouchLength;
     msg->touchData = new TouchData[msg->touchCount];
+	msg->timestamp = 0;
     
     if ((payload[1] + 2) > (payloadOffset + (expectedTouchLength * msg->touchCount))) // Check for timestamp
     {
@@ -1142,10 +1143,10 @@ void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload)
       if (payload[timestampIndex] == 0x58) // Check for timestamp identifier
       {
         uint8_t timestampLength = payload[timestampIndex + 1];
-        uint8_t valueIndex = timestampIndex + timestampLength + 1;
-        for (int8_t i = 0; i < timestampLength; i++)
+        for (index = (timestampIndex + 2); index < (timestampIndex + 2 + timestampLength); index++)
         {
-          msg->timestamp |= payload[valueIndex - i] << (8 * i);
+          msg->timestamp <<= 8;
+          msg->timestamp |= payload[index];
         }
       }
     }
