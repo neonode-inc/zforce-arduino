@@ -814,12 +814,14 @@ void Zforce::ParsePlatformInformation(PlatformInformationMessage *msg, uint8_t *
         DecodeOctetString(rawData, &position, &MCUUniqueIdentifierLength, &MCUUniqueIdentifier);
 
         // Each byte gets converted into its hex representation, which takes 2 bytes, then we add space for the null byte.
-        char* mcuIdBuffer = (char *)malloc((MCUUniqueIdentifierLength * 2) + 1);
+        uint32_t bufferLength = (MCUUniqueIdentifierLength * 2) + 1;
+
+        char* mcuIdBuffer = (char *)malloc(bufferLength);
         mcuIdBuffer[MCUUniqueIdentifierLength - 1] = 0; // Add null byte.
         int writeSize = 0;
         for (size_t i = 0; i < MCUUniqueIdentifierLength; i++)
         {
-            writeSize += snprintf(mcuIdBuffer + writeSize, bufferSize - writeSize, "%02X", MCUUniqueIdentifier[i]);
+            writeSize += snprintf(mcuIdBuffer + writeSize, bufferLength - writeSize, "%02X", MCUUniqueIdentifier[i]);
         }
         free(MCUUniqueIdentifier);
         msg->mcuUniqueIdentifier = mcuIdBuffer;
