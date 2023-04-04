@@ -1312,7 +1312,7 @@ void Zforce::DecodeOctetString(uint8_t* rawData, uint32_t* position, uint32_t* d
 {
     uint32_t length = rawData[(*position)++];
     *destinationLength = length;
-    *destination = (uint8_t*)malloc(length + 1);
+    *destination = (uint8_t*)malloc(length);
     memcpy(*destination, &rawData[(*position)], length);
     (*position) += length;
 }
