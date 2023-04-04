@@ -1143,7 +1143,7 @@ void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload)
       if (payload[timestampIndex] == 0x58) // Check for timestamp identifier
       {
         uint8_t timestampLength = payload[timestampIndex + 1];
-        for (index = (timestampIndex + 2); index < (timestampIndex + 2 + timestampLength); index++)
+        for (int index = (timestampIndex + 2); index < (timestampIndex + 2 + timestampLength); index++)
         {
           msg->timestamp <<= 8;
           msg->timestamp |= payload[index];
