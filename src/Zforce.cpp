@@ -813,13 +813,17 @@ void Zforce::ParsePlatformInformation(PlatformInformationMessage *msg, uint8_t *
         uint32_t MCUUniqueIdentifierLength;
         DecodeOctetString(rawData, &position, &MCUUniqueIdentifierLength, &MCUUniqueIdentifier);
 
-        const size_t bufferSize = 100;
-        char mcuIdBuffer[bufferSize];
+        // Each byte gets converted into its hex representation, which takes 2 bytes, then we add space for the null byte.
+        const uint32_t bufferLength = (MCUUniqueIdentifierLength * 2) + 1;
+
+        char* mcuIdBuffer = (char *)malloc(bufferLength);
+        mcuIdBuffer[MCUUniqueIdentifierLength - 1] = 0; // Add null byte.
         int writeSize = 0;
         for (size_t i = 0; i < MCUUniqueIdentifierLength; i++)
         {
-            writeSize += snprintf(mcuIdBuffer + writeSize, bufferSize - writeSize, "%02X", MCUUniqueIdentifier[i]);
+            writeSize += snprintf(mcuIdBuffer + writeSize, bufferLength - writeSize, "%02X", MCUUniqueIdentifier[i]);
         }
+        free(MCUUniqueIdentifier);
         msg->mcuUniqueIdentifier = mcuIdBuffer;
         msg->mcuUniqueIdentifierLength = writeSize;
         break;
@@ -1135,7 +1139,7 @@ void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload)
     const uint8_t expectedTouchLength = touchMetaInformation.touchByteCount + 2;
     msg->touchCount = payload[9] / expectedTouchLength;
     msg->touchData = new TouchData[msg->touchCount];
-	msg->timestamp = 0;
+    msg->timestamp = 0;
     
     if ((payload[1] + 2) > (payloadOffset + (expectedTouchLength * msg->touchCount))) // Check for timestamp
     {
@@ -1311,7 +1315,7 @@ void Zforce::DecodeOctetString(uint8_t* rawData, uint32_t* position, uint32_t* d
 {
     uint32_t length = rawData[(*position)++];
     *destinationLength = length;
-    *destination = (uint8_t*)malloc(length + 1);
+    *destination = (uint8_t*)malloc(length);
     memcpy(*destination, &rawData[(*position)], length);
     (*position) += length;
 }
