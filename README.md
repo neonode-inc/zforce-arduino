@@ -58,13 +58,13 @@ do
 if(msg->type == MessageType::TOUCHACTIVEAREATYPE)
 {
   Serial.print("lowerBoundX is: ");
-  Serial.println(((TouchActiveAreaMessage*)msg)->lowerBoundX);
+  Serial.println(((TouchActiveAreaMessage*)msg)->minX);
   Serial.print("lowerBoundY is: ");
-  Serial.println(((TouchActiveAreaMessage*)msg)->lowerBoundY);
+  Serial.println(((TouchActiveAreaMessage*)msg)->minY);
   Serial.print("upperBoundX is: ");
-  Serial.println(((TouchActiveAreaMessage*)msg)->upperBoundX);
+  Serial.println(((TouchActiveAreaMessage*)msg)->maxX);
   Serial.print("upperBoundY is: ");
-  Serial.println(((TouchActiveAreaMessage*)msg)->upperBoundY);
+  Serial.println(((TouchActiveAreaMessage*)msg)->maxY);
 }
  
 zforce.DestroyMessage(msg);
@@ -82,7 +82,7 @@ zforce.DestroyMessage(msg);
 | int         | Read               | uint8_t* payload                                                 | Initiates an I2C read sequence by calling the read method in the I2C library.  This can also be used externally to read the ASN.1 serialized messages without parsing them.                      | Error code according to the atmel data sheet  for the corresponding mcu . 0 for success. |
 | int         | Write              | uint8_t* payload                                                 | Initiates  an I2C write sequence by calling the write method in the I2C library.  This can also be used externally to write ASN.1 serialized messages that are not yet supported by the library. | Error code according to the atmel data sheet  for the corresponding mcu . 0 for success. |
 | bool        | Enable             | bool isEnabled                                                   | Writes an enable message to the sensor and depending on the parameter either sends enable or disable.                                                                                            | True if the write succeeded.                                                             |
-| bool        | TouchActiveArea    | uint16_t lowerBoundX uint16_t lowerBoundY uint16_t upperBoundX uint16_t upperBoundY          | Writes a touch active area message to the sensor with the passed parameters.                                                                                                                     | True if the write succeeded.                                                             |
+| bool        | TouchActiveArea    | uint16_t minX uint16_t minY uint16_t maxX uint16_t maxY          | Writes a touch active area message to the sensor with the passed parameters.                                                                                                                     | True if the write succeeded.                                                             |
 | bool        | FlipXY             | bool isFlipped                                                   | Writes a flip xy message to the sensor with the passed parameters.                                                                                                                               | True if the write succeeded.                                                             |
 | bool        | ReverseX           | bool isReversed                                                  | Writes a reverse x message to the sensor with the passed parameters.                                                                                                                             | True if the write succeeded.                                                             |
 | bool        | ReverseY           | bool isReversed                                                  | Writes a reverse y message to the sensor with the passed parameters.                                                                                                                             | True if the write succeeded.                                                             |

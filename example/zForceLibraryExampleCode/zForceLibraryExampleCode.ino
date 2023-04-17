@@ -106,14 +106,14 @@ void init_sensor()
 
   if (msg->type == MessageType::TOUCHACTIVEAREATYPE)
   {
-    Serial.print("lowerBoundX is: ");
-    Serial.println(((TouchActiveAreaMessage *)msg)->lowerBoundX);
-    Serial.print("lowerBoundY is: ");
-    Serial.println(((TouchActiveAreaMessage *)msg)->lowerBoundY);
-    Serial.print("upperBoundX is: ");
-    Serial.println(((TouchActiveAreaMessage *)msg)->upperBoundX);
-    Serial.print("upperBoundY is: ");
-    Serial.println(((TouchActiveAreaMessage *)msg)->upperBoundY);
+    Serial.print("minX is: ");
+    Serial.println(((TouchActiveAreaMessage *)msg)->minX);
+    Serial.print("minY is: ");
+    Serial.println(((TouchActiveAreaMessage *)msg)->minY);
+    Serial.print("maxX is: ");
+    Serial.println(((TouchActiveAreaMessage *)msg)->maxX);
+    Serial.print("maxY is: ");
+    Serial.println(((TouchActiveAreaMessage *)msg)->maxY);
   }
 
   zforce.DestroyMessage(msg);
