@@ -322,7 +322,7 @@ bool Zforce::GetEnable()
   return !failed;
 }
 
-bool Zforce::TouchActiveArea(uint16_t lowerBoundX, uint16_t lowerBoundY, uint16_t upperBoundX, uint16_t upperBoundY)
+bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16_t maxY)
 {
   bool failed = false;
 
@@ -330,10 +330,10 @@ bool Zforce::TouchActiveArea(uint16_t lowerBoundX, uint16_t lowerBoundY, uint16_
 
   uint8_t touchActiveArea[] = {0xEE, length + 10, 0xEE, length + 8,
                                0x40, 0x02, 0x02, 0x00, 0x73, length + 2, 0xA2, length,
-                               0x80, 0x02, (uint8_t)(lowerBoundX >> 8), (uint8_t)(lowerBoundX & 0xFF),
-                               0x81, 0x02, (uint8_t)(lowerBoundY >> 8), (uint8_t)(lowerBoundY & 0xFF),
-                               0x82, 0x02, (uint8_t)(upperBoundX >> 8), (uint8_t)(upperBoundX & 0xFF),
-                               0x83, 0x02, (uint8_t)(upperBoundY >> 8), (uint8_t)(upperBoundY & 0xFF)};
+                               0x80, 0x02, (uint8_t)(minX >> 8), (uint8_t)(minX & 0xFF),
+                               0x81, 0x02, (uint8_t)(minY >> 8), (uint8_t)(minY & 0xFF),
+                               0x82, 0x02, (uint8_t)(maxX >> 8), (uint8_t)(maxX & 0xFF),
+                               0x83, 0x02, (uint8_t)(maxY >> 8), (uint8_t)(maxY & 0xFF)};
 
   if (Write(touchActiveArea)) // We assume that the end user has called GetMessage prior to calling this method
   {
@@ -936,7 +936,7 @@ void Zforce::ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload)
   {
     switch (payload[i])
     {
-      case 0x80: // LowerBoundX
+      case 0x80: // MinX
         valueLength = payload[i + 1];
         if (valueLength == 2)
         {
@@ -947,10 +947,10 @@ void Zforce::ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload)
         {
           value = payload[i + 2];
         }
-        msg->lowerBoundX = value;
+        msg->minX = value;
       break;
 
-      case 0x81: // LowerBoundY
+      case 0x81: // MinY
         valueLength = payload[i + 1];
         if (valueLength == 2)
         {
@@ -961,10 +961,10 @@ void Zforce::ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload)
         {
           value = payload[i + 2];
         }
-        msg->lowerBoundY = value;
+        msg->minY = value;
       break;
 
-      case 0x82: // UpperBoundX
+      case 0x82: // MaxX
         valueLength = payload[i + 1];
         if (valueLength == 2)
         {
@@ -975,10 +975,10 @@ void Zforce::ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload)
         {
           value = payload[i + 2];
         }
-        msg->upperBoundX = value;
+        msg->maxX = value;
       break;
 
-      case 0x83: // UpperBoundY
+      case 0x83: // MaxY
         valueLength = payload[i + 1];
         if (valueLength == 2)
         {
@@ -989,7 +989,7 @@ void Zforce::ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload)
         {
           value = payload[i + 2];
         }
-        msg->upperBoundY = value;
+        msg->maxY = value;
       break;
 
       default:
