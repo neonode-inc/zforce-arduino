@@ -238,7 +238,7 @@ typedef struct FloatingProtectionMessage : public Message
 	}
 	bool enabled;
 	uint16_t time;
-} FloatingPointMessage;
+} FloatingProtectionMessage;
 
 typedef struct TouchMetaInformation
 {
