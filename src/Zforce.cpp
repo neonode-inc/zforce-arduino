@@ -326,14 +326,99 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
 {
   bool failed = false;
 
-  const uint8_t length = 16;
+  uint8_t touchActiveAreaPayloadLength = 3*4;
+  // 3 bytes * 4 entries.
+  // Each value that is >127 gets an extra byte.
+  if (minX > 127)
+  {
+    touchActiveAreaPayloadLength++;
+  }
+  if (maxX > 127)
+  {
+    touchActiveAreaPayloadLength++;
+  }
+  if (minY > 127)
+  {
+    touchActiveAreaPayloadLength++;
+  }
+  if (maxY > 127)
+  {
+    touchActiveAreaPayloadLength++;
+  }
 
-  uint8_t touchActiveArea[] = {0xEE, length + 10, 0xEE, length + 8,
-                               0x40, 0x02, 0x02, 0x00, 0x73, length + 2, 0xA2, length,
-                               0x80, 0x02, (uint8_t)(minX >> 8), (uint8_t)(minX & 0xFF),
-                               0x81, 0x02, (uint8_t)(minY >> 8), (uint8_t)(minY & 0xFF),
-                               0x82, 0x02, (uint8_t)(maxX >> 8), (uint8_t)(maxX & 0xFF),
-                               0x83, 0x02, (uint8_t)(maxY >> 8), (uint8_t)(maxY & 0xFF)};
+#define ALLHEADERSSIZE (2 + 2 + 4 + 4)
+
+  uint8_t totalLength = ALLHEADERSSIZE + touchActiveAreaPayloadLength;
+  // 2 bytes I2C header: 0xEE + 1 byte for Length. Length: totalLength - 2;
+  // 2 bytes for Request: 0xEE + 1 byte for length. Length: totalLength - 4;
+  // 4 bytes for Address: 0x40, 0x02, 0x02, 0x00.
+  // 4 bytes for touchActiveArea payload headers: 0x73, touchActiveAreaPayloadLength + 2, 0xA2, touchActiveAreaPayloadLength;
+  // X bytes for the actual payload (calculated above).
+
+  uint8_t touchActiveArea[totalLength] = { 0xEE, (uint8_t)(totalLength - 2),
+                                           0xEE, (uint8_t)(totalLength - 4),
+                                           0x40, 0x02, 0x02, 0x00,
+                                           0x73, (uint8_t)(touchActiveAreaPayloadLength + 2), 0xA2, touchActiveAreaPayloadLength };
+
+  size_t offset = ALLHEADERSSIZE;
+
+  // Each value <= 127 is 1 byte, above is 2 bytes.
+
+  // MinX.
+  touchActiveArea[offset++] = 0x80; // MinX identifier.
+  if (minX <= 127)
+  {
+    touchActiveArea[offset++] = 1;
+    touchActiveArea[offset++] = (uint8_t)minX;
+  }
+  else
+  {
+    touchActiveArea[offset++] = 2;
+    touchActiveArea[offset++] = (uint8_t)(minX >> 8);
+    touchActiveArea[offset++] = (uint8_t)(minX & 0x7F);
+  }
+
+  // MaxX.
+  touchActiveArea[offset++] = 0x81; // MaxX identifier.
+  if (maxX <= 127)
+  {
+    touchActiveArea[offset++] = 1;
+    touchActiveArea[offset++] = (uint8_t)maxX;
+  }
+  else
+  {
+    touchActiveArea[offset++] = 2;
+    touchActiveArea[offset++] = (uint8_t)(maxX >> 8);
+    touchActiveArea[offset++] = (uint8_t)(maxX & 0x7F);
+  }
+
+  // MinY.
+  touchActiveArea[offset++] = 0x82; // MinY identifier.
+  if (minY <= 127)
+  {
+    touchActiveArea[offset++] = 1;
+    touchActiveArea[offset++] = (uint8_t)minY;
+  }
+  else
+  {
+    touchActiveArea[offset++] = 2;
+    touchActiveArea[offset++] = (uint8_t)(minY >> 8);
+    touchActiveArea[offset++] = (uint8_t)(minY & 0x7F);
+  }
+
+  // MaxY.
+  touchActiveArea[offset++] = 0x83; // MaxY identifier.
+  if (maxY <= 127)
+  {
+    touchActiveArea[offset++] = 1;
+    touchActiveArea[offset++] = (uint8_t)maxY;
+  }
+  else
+  {
+    touchActiveArea[offset++] = 2;
+    touchActiveArea[offset++] = (uint8_t)(maxY >> 8);
+    touchActiveArea[offset++] = (uint8_t)(maxY & 0x7F);
+  }
 
   if (Write(touchActiveArea)) // We assume that the end user has called GetMessage prior to calling this method
   {
@@ -762,6 +847,7 @@ void Zforce::ParseTouchDescriptor(TouchDescriptorMessage* msg, uint8_t* payload)
 
 void Zforce::ParsePlatformInformation(PlatformInformationMessage *msg, uint8_t *rawData, uint32_t length)
 {
+  (void)length;
   uint16_t value = 0;
   uint16_t valueLength = 0;
 
