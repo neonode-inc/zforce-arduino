@@ -368,7 +368,7 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
   touchActiveArea[offset++] = 0x80; // MinX identifier.
   touchActiveArea[offset++] = minXLength;
   touchActiveArea[offset++] = (uint8_t)minXValue[0];
-  if (minXLength > 1)
+  if (minXLength == 2)
   {
     touchActiveArea[offset++] = (uint8_t)minXValue[1];
   }
@@ -377,7 +377,7 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
   touchActiveArea[offset++] = 0x81; // MinY identifier.
   touchActiveArea[offset++] = minYLength;
   touchActiveArea[offset++] = (uint8_t)minYValue[0];
-  if (minYLength > 1)
+  if (minYLength == 2)
   {
     touchActiveArea[offset++] = (uint8_t)minYValue[1];
   }
@@ -386,7 +386,7 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
   touchActiveArea[offset++] = 0x82; // MaxX identifier.
   touchActiveArea[offset++] = maxXLength;
   touchActiveArea[offset++] = (uint8_t)maxXValue[0];
-  if (maxXLength > 1)
+  if (maxXLength == 2)
   {
     touchActiveArea[offset++] = (uint8_t)maxXValue[1];
   }
@@ -395,7 +395,7 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
   touchActiveArea[offset++] = 0x83; // MaxY identifier.
   touchActiveArea[offset++] = maxYLength;
   touchActiveArea[offset++] = (uint8_t)maxYValue[0];
-  if (maxYLength > 1)
+  if (maxYLength == 2)
   {
     touchActiveArea[offset++] = (uint8_t)maxYValue[1];
   }
@@ -416,18 +416,19 @@ bool Zforce::Frequency(uint16_t idleFrequency, uint16_t fingerFrequency)
 {
   bool failed = false;
 
-  uint8_t frequencyPayloadLength = 3 * 2;
-  // 3 bytes * 2 entries.
+  uint8_t frequencyPayloadLength = 2 * 2;
+  // 2 bytes * 2 entries. Not counting the actual values, which are 1 or 2 bytes.
 
   // Each value that is >127 gets an extra byte.
-  if (fingerFrequency > 127)
-  {
-    frequencyPayloadLength++;
-  }
-  if (idleFrequency > 127)
-  {
-    frequencyPayloadLength++;
-  }
+
+  uint8_t fingerFrequencyValue[2];
+  uint8_t idleFrequencyValue[2];
+
+  uint8_t fingerFrequencyLength = SerializeInt(fingerFrequency, fingerFrequencyValue);
+  uint8_t idleFrequencyLength = SerializeInt(idleFrequency, idleFrequencyValue);
+
+  frequencyPayloadLength += fingerFrequencyLength;
+  frequencyPayloadLength += idleFrequencyLength;
 
 #define FREQ_ALLHEADERSSIZE (2 + 2 + 4 + 2)
 
@@ -449,30 +450,20 @@ bool Zforce::Frequency(uint16_t idleFrequency, uint16_t fingerFrequency)
 
   // Finger Frequency.
   frequency[offset++] = 0x80; // Finger Frequency identifier.
-  if (fingerFrequency <= 127)
+  frequency[offset++] = fingerFrequencyLength;
+  frequency[offset++] = (uint8_t)fingerFrequencyValue[0];
+  if (fingerFrequencyLength == 2)
   {
-    frequency[offset++] = 1;
-    frequency[offset++] = (uint8_t)fingerFrequency;
-  }
-  else
-  {
-    frequency[offset++] = 2;
-    frequency[offset++] = (uint8_t)(fingerFrequency >> 8);
-    frequency[offset++] = (uint8_t)(fingerFrequency & 0xFF);
+    frequency[offset++] = (uint8_t)fingerFrequencyValue[1];
   }
 
   // Idle Frequency.
   frequency[offset++] = 0x82; // Idle Frequency identifier.
-  if (idleFrequency <= 127)
+  frequency[offset++] = idleFrequencyLength;
+  frequency[offset++] = (uint8_t)idleFrequencyValue[0];
+  if (idleFrequencyLength == 2)
   {
-    frequency[offset++] = 1;
-    frequency[offset++] = (uint8_t)idleFrequency;
-  }
-  else
-  {
-    frequency[offset++] = 2;
-    frequency[offset++] = (uint8_t)(idleFrequency >> 8);
-    frequency[offset++] = (uint8_t)(idleFrequency & 0xFF);
+    frequency[offset++] = (uint8_t)idleFrequencyValue[1];
   }
 
   if (Write(frequency)) // We assume that the end user has called GetMessage prior to calling this method
