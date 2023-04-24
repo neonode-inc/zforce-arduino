@@ -328,6 +328,7 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
 
   uint8_t touchActiveAreaPayloadLength = 3 * 4;
   // 3 bytes * 4 entries.
+
   // Each value that is >127 gets an extra byte.
   if (minX > 127)
   {
@@ -346,13 +347,13 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
     touchActiveAreaPayloadLength++;
   }
 
-#define ALLHEADERSSIZE (2 + 2 + 4 + 4)
+#define TAA_ALLHEADERSSIZE (2 + 2 + 4 + 4)
 
-  uint8_t totalLength = ALLHEADERSSIZE + touchActiveAreaPayloadLength;
-  // 2 bytes I2C header: 0xEE + 1 byte for Length. Length: totalLength - 2;
-  // 2 bytes for Request: 0xEE + 1 byte for length. Length: totalLength - 4;
+  uint8_t totalLength = TAA_ALLHEADERSSIZE + touchActiveAreaPayloadLength;
+  // 2 bytes I2C header: 0xEE + 1 byte for Length. Length: totalLength - 2.
+  // 2 bytes for Request: 0xEE + 1 byte for Length. Length: totalLength - 4.
   // 4 bytes for Address: 0x40, 0x02, 0x02, 0x00.
-  // 4 bytes for touchActiveArea payload headers: 0x73, touchActiveAreaPayloadLength + 2, 0xA2, touchActiveAreaPayloadLength;
+  // 4 bytes for touchActiveArea payload headers: 0x73, touchActiveAreaPayloadLength + 2, 0xA2, touchActiveAreaPayloadLength.
   // X bytes for the actual payload (calculated above).
 
   uint8_t touchActiveArea[totalLength] = { 0xEE, (uint8_t)(totalLength - 2),
@@ -360,7 +361,7 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
                                            0x40, 0x02, 0x02, 0x00,
                                            0x73, (uint8_t)(touchActiveAreaPayloadLength + 2), 0xA2, touchActiveAreaPayloadLength };
 
-  size_t offset = ALLHEADERSSIZE;
+  size_t offset = TAA_ALLHEADERSSIZE;
 
   // Each value <= 127 is 1 byte, above is 2 bytes.
 
@@ -434,26 +435,77 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
 
 bool Zforce::Frequency(uint16_t idleFrequency, uint16_t fingerFrequency)
 {
-    bool failed = false;
+  bool failed = false;
 
-    const uint8_t length = 8;
+  uint8_t frequencyPayloadLength = 3 * 2;
+  // 3 bytes * 2 entries.
 
-    uint8_t frequency[] = { 0xEE, length + 8, 0xEE, length + 6,
-                            0x40, 0x02, 0x00, 0x00, 0x68, length,
-                            0x80, 0x02, (uint8_t)(fingerFrequency >> 8), (uint8_t)(fingerFrequency & 0xFF),
-                            0x82, 0x02, (uint8_t)(idleFrequency   >> 8), (uint8_t)(idleFrequency   & 0xFF)};
+  // Each value that is >127 gets an extra byte.
+  if (fingerFrequency > 127)
+  {
+    frequencyPayloadLength++;
+  }
+  if (idleFrequency > 127)
+  {
+    frequencyPayloadLength++;
+  }
 
+#define FREQ_ALLHEADERSSIZE (2 + 2 + 4 + 2)
 
-    if (Write(frequency)) // We assume that the end user has called GetMessage prior to calling this method
-    {
-        failed = true;
-    }
-    else
-    {
-        lastSentMessage = MessageType::FREQUENCYTYPE;
-    }
+  uint8_t totalLength = FREQ_ALLHEADERSSIZE + frequencyPayloadLength;
+  // 2 bytes I2C header: 0xEE + 1 byte for Length. Length: totalLength - 2.
+  // 2 bytes for Request: 0xEE + 1 byte for Length. Length: totalLength - 4.
+  // 4 bytes for Address: 0x40, 0x02, 0x02, 0x00.
+  // 2 bytes for Frequency payload headers: 0x68, frequencyPayloadLength.
+  // X bytes for the actual payload (calculated above).
 
-    return !failed;
+  uint8_t frequency[totalLength] = { 0xEE, (uint8_t)(totalLength - 2),
+                                     0xEE, (uint8_t)(totalLength - 4),
+                                     0x40, 0x02, 0x02, 0x00,
+                                     0x68, frequencyPayloadLength };
+
+  size_t offset = FREQ_ALLHEADERSSIZE;
+
+  // Each value <= 127 is 1 byte, above is 2 bytes.
+
+  // Finger Frequency.
+  frequency[offset++] = 0x80; // Finger Frequency identifier.
+  if (fingerFrequency <= 127)
+  {
+    frequency[offset++] = 1;
+    frequency[offset++] = (uint8_t)fingerFrequency;
+  }
+  else
+  {
+    frequency[offset++] = 2;
+    frequency[offset++] = (uint8_t)(fingerFrequency >> 8);
+    frequency[offset++] = (uint8_t)(fingerFrequency & 0xFF);
+  }
+
+  // Idle Frequency.
+  frequency[offset++] = 0x82; // Idle Frequency identifier.
+  if (idleFrequency <= 127)
+  {
+    frequency[offset++] = 1;
+    frequency[offset++] = (uint8_t)idleFrequency;
+  }
+  else
+  {
+    frequency[offset++] = 2;
+    frequency[offset++] = (uint8_t)(idleFrequency >> 8);
+    frequency[offset++] = (uint8_t)(idleFrequency & 0xFF);
+  }
+
+  if (Write(frequency)) // We assume that the end user has called GetMessage prior to calling this method
+  {
+    failed = true;
+  }
+  else
+  {
+    lastSentMessage = MessageType::FREQUENCYTYPE;
+  }
+
+  return !failed;
 }
 
 
