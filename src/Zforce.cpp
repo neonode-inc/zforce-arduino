@@ -326,7 +326,7 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
 {
   bool failed = false;
 
-  uint8_t touchActiveAreaPayloadLength = 3*4;
+  uint8_t touchActiveAreaPayloadLength = 3 * 4;
   // 3 bytes * 4 entries.
   // Each value that is >127 gets an extra byte.
   if (minX > 127)
