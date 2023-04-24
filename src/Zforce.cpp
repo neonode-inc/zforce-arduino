@@ -326,26 +326,25 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
 {
   bool failed = false;
 
-  uint8_t touchActiveAreaPayloadLength = 3 * 4;
-  // 3 bytes * 4 entries.
+  uint8_t touchActiveAreaPayloadLength = 2 * 4;
+  // 2 bytes * 4 entries. Not counting the actual values, which are 1 or 2 bytes.
 
   // Each value that is >127 gets an extra byte.
-  if (minX > 127)
-  {
-    touchActiveAreaPayloadLength++;
-  }
-  if (maxX > 127)
-  {
-    touchActiveAreaPayloadLength++;
-  }
-  if (minY > 127)
-  {
-    touchActiveAreaPayloadLength++;
-  }
-  if (maxY > 127)
-  {
-    touchActiveAreaPayloadLength++;
-  }
+
+  uint8_t minXValue[2];
+  uint8_t minYValue[2];
+  uint8_t maxXValue[2];
+  uint8_t maxYValue[2];
+
+  uint8_t minXLength = SerializeInt(minX, minXValue);
+  uint8_t minYLength = SerializeInt(minY, minYValue);
+  uint8_t maxXLength = SerializeInt(maxX, maxXValue);
+  uint8_t maxYLength = SerializeInt(maxY, maxYValue);
+
+  touchActiveAreaPayloadLength += minXLength;
+  touchActiveAreaPayloadLength += minYLength;
+  touchActiveAreaPayloadLength += maxXLength;
+  touchActiveAreaPayloadLength += maxYLength;
 
 #define TAA_ALLHEADERSSIZE (2 + 2 + 4 + 4)
 
@@ -367,58 +366,38 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
 
   // MinX.
   touchActiveArea[offset++] = 0x80; // MinX identifier.
-  if (minX <= 127)
+  touchActiveArea[offset++] = minXLength;
+  touchActiveArea[offset++] = (uint8_t)minXValue[0];
+  if (minX > 127)
   {
-    touchActiveArea[offset++] = 1;
-    touchActiveArea[offset++] = (uint8_t)minX;
-  }
-  else
-  {
-    touchActiveArea[offset++] = 2;
-    touchActiveArea[offset++] = (uint8_t)(minX >> 8);
-    touchActiveArea[offset++] = (uint8_t)(minX & 0xFF);
+    touchActiveArea[offset++] = (uint8_t)minXValue[1];
   }
 
   // MinY.
   touchActiveArea[offset++] = 0x81; // MinY identifier.
-  if (minY <= 127)
+  touchActiveArea[offset++] = minYLength;
+  touchActiveArea[offset++] = (uint8_t)minYValue[0];
+  if (minX > 127)
   {
-    touchActiveArea[offset++] = 1;
-    touchActiveArea[offset++] = (uint8_t)minY;
-  }
-  else
-  {
-    touchActiveArea[offset++] = 2;
-    touchActiveArea[offset++] = (uint8_t)(minY >> 8);
-    touchActiveArea[offset++] = (uint8_t)(minY & 0xFF);
+    touchActiveArea[offset++] = (uint8_t)minYValue[1];
   }
 
   // MaxX.
   touchActiveArea[offset++] = 0x82; // MaxX identifier.
-  if (maxX <= 127)
+  touchActiveArea[offset++] = maxXLength;
+  touchActiveArea[offset++] = (uint8_t)maxXValue[0];
+  if (minX > 127)
   {
-    touchActiveArea[offset++] = 1;
-    touchActiveArea[offset++] = (uint8_t)maxX;
-  }
-  else
-  {
-    touchActiveArea[offset++] = 2;
-    touchActiveArea[offset++] = (uint8_t)(maxX >> 8);
-    touchActiveArea[offset++] = (uint8_t)(maxX & 0xFF);
+    touchActiveArea[offset++] = (uint8_t)maxXValue[1];
   }
 
   // MaxY.
   touchActiveArea[offset++] = 0x83; // MaxY identifier.
-  if (maxY <= 127)
+  touchActiveArea[offset++] = maxYLength;
+  touchActiveArea[offset++] = (uint8_t)maxYValue[0];
+  if (minX > 127)
   {
-    touchActiveArea[offset++] = 1;
-    touchActiveArea[offset++] = (uint8_t)maxY;
-  }
-  else
-  {
-    touchActiveArea[offset++] = 2;
-    touchActiveArea[offset++] = (uint8_t)(maxY >> 8);
-    touchActiveArea[offset++] = (uint8_t)(maxY & 0xFF);
+    touchActiveArea[offset++] = (uint8_t)maxYValue[1];
   }
 
   if (Write(touchActiveArea)) // We assume that the end user has called GetMessage prior to calling this method
