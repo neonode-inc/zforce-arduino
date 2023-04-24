@@ -951,6 +951,9 @@ void Zforce::ParseTouchMode(TouchModeMessage* msg, uint8_t* payload)
   const uint8_t offset = 9;
   uint16_t valueLength = 0;
 
+  msg->clickOnTouchTime = -1;   // FW <=1.55 doesn't reply properly when mode = Disabled.
+  msg->clickOnTouchRadius = -1; // We set them to -1, signaling the data is invalid.
+
   for (int i = offset; i < payload[10] + offset; i++)
   {
     switch (payload[i])
