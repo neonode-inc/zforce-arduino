@@ -375,7 +375,7 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
   {
     touchActiveArea[offset++] = 2;
     touchActiveArea[offset++] = (uint8_t)(minX >> 8);
-    touchActiveArea[offset++] = (uint8_t)(minX & 0x7F);
+    touchActiveArea[offset++] = (uint8_t)(minX & 0xFF);
   }
 
   // MaxX.
@@ -389,7 +389,7 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
   {
     touchActiveArea[offset++] = 2;
     touchActiveArea[offset++] = (uint8_t)(maxX >> 8);
-    touchActiveArea[offset++] = (uint8_t)(maxX & 0x7F);
+    touchActiveArea[offset++] = (uint8_t)(maxX & 0xFF);
   }
 
   // MinY.
@@ -403,7 +403,7 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
   {
     touchActiveArea[offset++] = 2;
     touchActiveArea[offset++] = (uint8_t)(minY >> 8);
-    touchActiveArea[offset++] = (uint8_t)(minY & 0x7F);
+    touchActiveArea[offset++] = (uint8_t)(minY & 0xFF);
   }
 
   // MaxY.
@@ -417,7 +417,7 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
   {
     touchActiveArea[offset++] = 2;
     touchActiveArea[offset++] = (uint8_t)(maxY >> 8);
-    touchActiveArea[offset++] = (uint8_t)(maxY & 0x7F);
+    touchActiveArea[offset++] = (uint8_t)(maxY & 0xFF);
   }
 
   if (Write(touchActiveArea)) // We assume that the end user has called GetMessage prior to calling this method
