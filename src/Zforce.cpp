@@ -326,14 +326,79 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
 {
   bool failed = false;
 
-  const uint8_t length = 16;
+  uint8_t touchActiveAreaPayloadLength = 2 * 4;
+  // 2 bytes * 4 entries. Not counting the actual values, which are 1 or 2 bytes.
 
-  uint8_t touchActiveArea[] = {0xEE, length + 10, 0xEE, length + 8,
-                               0x40, 0x02, 0x02, 0x00, 0x73, length + 2, 0xA2, length,
-                               0x80, 0x02, (uint8_t)(minX >> 8), (uint8_t)(minX & 0xFF),
-                               0x81, 0x02, (uint8_t)(minY >> 8), (uint8_t)(minY & 0xFF),
-                               0x82, 0x02, (uint8_t)(maxX >> 8), (uint8_t)(maxX & 0xFF),
-                               0x83, 0x02, (uint8_t)(maxY >> 8), (uint8_t)(maxY & 0xFF)};
+  // Each value that is >127 gets an extra byte.
+
+  uint8_t minXValue[2];
+  uint8_t minYValue[2];
+  uint8_t maxXValue[2];
+  uint8_t maxYValue[2];
+
+  uint8_t minXLength = SerializeInt(minX, minXValue);
+  uint8_t minYLength = SerializeInt(minY, minYValue);
+  uint8_t maxXLength = SerializeInt(maxX, maxXValue);
+  uint8_t maxYLength = SerializeInt(maxY, maxYValue);
+
+  touchActiveAreaPayloadLength += minXLength;
+  touchActiveAreaPayloadLength += minYLength;
+  touchActiveAreaPayloadLength += maxXLength;
+  touchActiveAreaPayloadLength += maxYLength;
+
+#define TAA_ALLHEADERSSIZE (2 + 2 + 4 + 4)
+
+  uint8_t totalLength = TAA_ALLHEADERSSIZE + touchActiveAreaPayloadLength;
+  // 2 bytes I2C header: 0xEE + 1 byte for Length. Length: totalLength - 2.
+  // 2 bytes for Request: 0xEE + 1 byte for Length. Length: totalLength - 4.
+  // 4 bytes for Address: 0x40, 0x02, 0x02, 0x00.
+  // 4 bytes for touchActiveArea payload headers: 0x73, touchActiveAreaPayloadLength + 2, 0xA2, touchActiveAreaPayloadLength.
+  // X bytes for the actual payload (calculated above).
+
+  uint8_t touchActiveArea[totalLength] = { 0xEE, (uint8_t)(totalLength - 2),
+                                           0xEE, (uint8_t)(totalLength - 4),
+                                           0x40, 0x02, 0x02, 0x00,
+                                           0x73, (uint8_t)(touchActiveAreaPayloadLength + 2), 0xA2, touchActiveAreaPayloadLength };
+
+  size_t offset = TAA_ALLHEADERSSIZE;
+
+  // Each value <= 127 is 1 byte, above is 2 bytes.
+
+  // MinX.
+  touchActiveArea[offset++] = 0x80; // MinX identifier.
+  touchActiveArea[offset++] = minXLength;
+  touchActiveArea[offset++] = (uint8_t)minXValue[0];
+  if (minXLength == 2)
+  {
+    touchActiveArea[offset++] = (uint8_t)minXValue[1];
+  }
+
+  // MinY.
+  touchActiveArea[offset++] = 0x81; // MinY identifier.
+  touchActiveArea[offset++] = minYLength;
+  touchActiveArea[offset++] = (uint8_t)minYValue[0];
+  if (minYLength == 2)
+  {
+    touchActiveArea[offset++] = (uint8_t)minYValue[1];
+  }
+
+  // MaxX.
+  touchActiveArea[offset++] = 0x82; // MaxX identifier.
+  touchActiveArea[offset++] = maxXLength;
+  touchActiveArea[offset++] = (uint8_t)maxXValue[0];
+  if (maxXLength == 2)
+  {
+    touchActiveArea[offset++] = (uint8_t)maxXValue[1];
+  }
+
+  // MaxY.
+  touchActiveArea[offset++] = 0x83; // MaxY identifier.
+  touchActiveArea[offset++] = maxYLength;
+  touchActiveArea[offset++] = (uint8_t)maxYValue[0];
+  if (maxYLength == 2)
+  {
+    touchActiveArea[offset++] = (uint8_t)maxYValue[1];
+  }
 
   if (Write(touchActiveArea)) // We assume that the end user has called GetMessage prior to calling this method
   {
@@ -349,26 +414,68 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
 
 bool Zforce::Frequency(uint16_t idleFrequency, uint16_t fingerFrequency)
 {
-    bool failed = false;
+  bool failed = false;
 
-    const uint8_t length = 8;
+  uint8_t frequencyPayloadLength = 2 * 2;
+  // 2 bytes * 2 entries. Not counting the actual values, which are 1 or 2 bytes.
 
-    uint8_t frequency[] = { 0xEE, length + 8, 0xEE, length + 6,
-                            0x40, 0x02, 0x00, 0x00, 0x68, length,
-                            0x80, 0x02, (uint8_t)(fingerFrequency >> 8), (uint8_t)(fingerFrequency & 0xFF),
-                            0x82, 0x02, (uint8_t)(idleFrequency   >> 8), (uint8_t)(idleFrequency   & 0xFF)};
+  // Each value that is >127 gets an extra byte.
 
+  uint8_t fingerFrequencyValue[2];
+  uint8_t idleFrequencyValue[2];
 
-    if (Write(frequency)) // We assume that the end user has called GetMessage prior to calling this method
-    {
-        failed = true;
-    }
-    else
-    {
-        lastSentMessage = MessageType::FREQUENCYTYPE;
-    }
+  uint8_t fingerFrequencyLength = SerializeInt(fingerFrequency, fingerFrequencyValue);
+  uint8_t idleFrequencyLength = SerializeInt(idleFrequency, idleFrequencyValue);
 
-    return !failed;
+  frequencyPayloadLength += fingerFrequencyLength;
+  frequencyPayloadLength += idleFrequencyLength;
+
+#define FREQ_ALLHEADERSSIZE (2 + 2 + 4 + 2)
+
+  uint8_t totalLength = FREQ_ALLHEADERSSIZE + frequencyPayloadLength;
+  // 2 bytes I2C header: 0xEE + 1 byte for Length. Length: totalLength - 2.
+  // 2 bytes for Request: 0xEE + 1 byte for Length. Length: totalLength - 4.
+  // 4 bytes for Address: 0x40, 0x02, 0x02, 0x00.
+  // 2 bytes for Frequency payload headers: 0x68, frequencyPayloadLength.
+  // X bytes for the actual payload (calculated above).
+
+  uint8_t frequency[totalLength] = { 0xEE, (uint8_t)(totalLength - 2),
+                                     0xEE, (uint8_t)(totalLength - 4),
+                                     0x40, 0x02, 0x02, 0x00,
+                                     0x68, frequencyPayloadLength };
+
+  size_t offset = FREQ_ALLHEADERSSIZE;
+
+  // Each value <= 127 is 1 byte, above is 2 bytes.
+
+  // Finger Frequency.
+  frequency[offset++] = 0x80; // Finger Frequency identifier.
+  frequency[offset++] = fingerFrequencyLength;
+  frequency[offset++] = (uint8_t)fingerFrequencyValue[0];
+  if (fingerFrequencyLength == 2)
+  {
+    frequency[offset++] = (uint8_t)fingerFrequencyValue[1];
+  }
+
+  // Idle Frequency.
+  frequency[offset++] = 0x82; // Idle Frequency identifier.
+  frequency[offset++] = idleFrequencyLength;
+  frequency[offset++] = (uint8_t)idleFrequencyValue[0];
+  if (idleFrequencyLength == 2)
+  {
+    frequency[offset++] = (uint8_t)idleFrequencyValue[1];
+  }
+
+  if (Write(frequency)) // We assume that the end user has called GetMessage prior to calling this method
+  {
+    failed = true;
+  }
+  else
+  {
+    lastSentMessage = MessageType::FREQUENCYTYPE;
+  }
+
+  return !failed;
 }
 
 
@@ -762,6 +869,7 @@ void Zforce::ParseTouchDescriptor(TouchDescriptorMessage* msg, uint8_t* payload)
 
 void Zforce::ParsePlatformInformation(PlatformInformationMessage *msg, uint8_t *rawData, uint32_t length)
 {
+  (void)length;
   uint16_t value = 0;
   uint16_t valueLength = 0;
 
