@@ -378,22 +378,8 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
     touchActiveArea[offset++] = (uint8_t)(minX & 0xFF);
   }
 
-  // MaxX.
-  touchActiveArea[offset++] = 0x81; // MaxX identifier.
-  if (maxX <= 127)
-  {
-    touchActiveArea[offset++] = 1;
-    touchActiveArea[offset++] = (uint8_t)maxX;
-  }
-  else
-  {
-    touchActiveArea[offset++] = 2;
-    touchActiveArea[offset++] = (uint8_t)(maxX >> 8);
-    touchActiveArea[offset++] = (uint8_t)(maxX & 0xFF);
-  }
-
   // MinY.
-  touchActiveArea[offset++] = 0x82; // MinY identifier.
+  touchActiveArea[offset++] = 0x81; // MinY identifier.
   if (minY <= 127)
   {
     touchActiveArea[offset++] = 1;
@@ -404,6 +390,20 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
     touchActiveArea[offset++] = 2;
     touchActiveArea[offset++] = (uint8_t)(minY >> 8);
     touchActiveArea[offset++] = (uint8_t)(minY & 0xFF);
+  }
+
+  // MaxX.
+  touchActiveArea[offset++] = 0x82; // MaxX identifier.
+  if (maxX <= 127)
+  {
+    touchActiveArea[offset++] = 1;
+    touchActiveArea[offset++] = (uint8_t)maxX;
+  }
+  else
+  {
+    touchActiveArea[offset++] = 2;
+    touchActiveArea[offset++] = (uint8_t)(maxX >> 8);
+    touchActiveArea[offset++] = (uint8_t)(maxX & 0xFF);
   }
 
   // MaxY.
