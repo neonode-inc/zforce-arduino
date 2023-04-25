@@ -441,7 +441,7 @@ bool Zforce::Frequency(uint16_t idleFrequency, uint16_t fingerFrequency)
 
   uint8_t frequency[totalLength] = { 0xEE, (uint8_t)(totalLength - 2),
                                      0xEE, (uint8_t)(totalLength - 4),
-                                     0x40, 0x02, 0x02, 0x00,
+                                     0x40, 0x02, 0x00, 0x00,
                                      0x68, frequencyPayloadLength };
 
   size_t offset = FREQ_ALLHEADERSSIZE;
