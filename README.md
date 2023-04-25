@@ -57,13 +57,13 @@ do
 // See what the response contains
 if(msg->type == MessageType::TOUCHACTIVEAREATYPE)
 {
-  Serial.print("lowerBoundX is: ");
+  Serial.print("minX is: ");
   Serial.println(((TouchActiveAreaMessage*)msg)->minX);
-  Serial.print("lowerBoundY is: ");
+  Serial.print("minY is: ");
   Serial.println(((TouchActiveAreaMessage*)msg)->minY);
-  Serial.print("upperBoundX is: ");
+  Serial.print("maxX is: ");
   Serial.println(((TouchActiveAreaMessage*)msg)->maxX);
-  Serial.print("upperBoundY is: ");
+  Serial.print("maxY is: ");
   Serial.println(((TouchActiveAreaMessage*)msg)->maxY);
 }
  
