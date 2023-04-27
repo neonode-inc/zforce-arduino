@@ -196,20 +196,13 @@ uint8_t* Zforce::ReceiveRawMessage(uint8_t* receivedLength, uint16_t *remainingL
     if (this->remainingRawLength == 0)
     {
       // This is the first invocation.
-      if (buffer[2] != 0xEF)
-      {
-        // This was not a response.
-        *receivedLength = 0;
-        *remainingLength = 0;
-        return nullptr;
-      }
       // Check if it's a short, 2, or 3 byte length encoding.
       uint8_t firstLengthByte = buffer[3];
       uint16_t asn1AfterHeaderLength;
       uint8_t asn1HeaderLength = 2; // EE/EF/F0 + First byte of length.
       if (firstLengthByte < 0x80)
       {
-        // Short form. Lower 7 bits are the length, but since it's 0, we don't need to & 0x7F to get it.
+        // Short form. Lower 7 bits are the length, but since the high bit is 0, we don't need to & 0x7F to get the lower 7.
         asn1AfterHeaderLength = firstLengthByte;
       }
       else
