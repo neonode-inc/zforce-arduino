@@ -1,28 +1,23 @@
 /*  Neonode zForce v7 interface library for Arduino
 
-    Copyright (C) 2020 Neonode Inc.
+    This example code is distributed freely.
+    This is an exception from the rest of the library that is released
+    under GNU Lesser General Public License.
 
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
+    The purpose of this example code is to demonstrate parts of the 
+    library's functionality and capabilities. It is free to use, copy
+    and edit without restrictions.
 
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #include <Zforce.h>
-#define DATA_READY 1
+
+#define DATA_READY PIN_NN_DR // change "PIN_NN_DR" to assigned GPIO digital pin
 
 void setup()
 {
   Serial.begin(115200);
   while(!Serial){};
+
   Serial.println("zforce start");
   zforce.Start(DATA_READY);
   init_sensor();
@@ -30,8 +25,11 @@ void setup()
 
 void loop()
 {
+  // Continuously read any messages available from the sensor and print
+  // touch data to Serial interface. Normally there should be only 
+  // touch notifications as long as no request messages are sent to the sensor.
   Message* touch = zforce.GetMessage();
-  if (touch != NULL)
+  if (touch != nullptr)
   {
     if (touch->type == MessageType::TOUCHTYPE)
     {
@@ -49,8 +47,8 @@ void loop()
     }
     else if (touch->type == MessageType::BOOTCOMPLETETYPE)
     {
-      /*If we for some reason we would receive a boot 
-      complete message, the sensor needs to be reinitiated.*/
+      // If we for some reason receive a boot complete
+      // message, the sensor needs to be reinitialized:
       init_sensor(); 
     }
 
@@ -58,9 +56,17 @@ void loop()
   }
 }
 
+
+// Write some configuration parameters to sensor and enable sensor.
+// The choice of parameters to configure here are just examples to show how to 
+// use the library.
+// NOTE: Sensor firmware versions 2.xx has persistent storage of configuration
+// parameters while versions 1.xx does not. See the library documentation for
+//  further info.
 void init_sensor()
 {
-  Message *msg = NULL;
+  Message *msg = nullptr;
+
 
   // Send and read ReverseX
   zforce.ReverseX(false);
@@ -68,7 +74,7 @@ void init_sensor()
   do
   {
     msg = zforce.GetMessage();
-  } while (msg == NULL);
+  } while (msg == nullptr);
 
   if (msg->type == MessageType::REVERSEXTYPE)
   {
@@ -79,13 +85,14 @@ void init_sensor()
 
   zforce.DestroyMessage(msg);
 
+
   // Send and read ReverseY
   zforce.ReverseY(false);
 
   do
   {
     msg = zforce.GetMessage();
-  } while (msg == NULL);
+  } while (msg == nullptr);
 
   if (msg->type == MessageType::REVERSEYTYPE)
   {
@@ -96,13 +103,14 @@ void init_sensor()
 
   zforce.DestroyMessage(msg);
 
+
   // Send and read Touch Active Area
   zforce.TouchActiveArea(0, 0, 4000, 4000);
 
   do
   {
     msg = zforce.GetMessage();
-  } while (msg == NULL);
+  } while (msg == nullptr);
 
   if (msg->type == MessageType::TOUCHACTIVEAREATYPE)
   {
@@ -118,6 +126,7 @@ void init_sensor()
 
   zforce.DestroyMessage(msg);
 
+
   // Send and read Enable
 
   zforce.Enable(true);
@@ -125,7 +134,7 @@ void init_sensor()
   do
   {
     msg = zforce.GetMessage();
-  } while (msg == NULL);
+  } while (msg == nullptr);
 
   if (msg->type == MessageType::ENABLETYPE)
   {

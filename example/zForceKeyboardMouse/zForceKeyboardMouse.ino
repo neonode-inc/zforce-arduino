@@ -1,30 +1,23 @@
 /*  Neonode zForce v7 interface library for Arduino
 
-    Copyright (C) 2020 Neonode Inc.
+    This example code is distributed freely.
+    This is an exception from the rest of the library that is released
+    under GNU Lesser General Public License.
 
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    2.1 of the License, or (at your option) any later version.
+    The purpose of this example code is to demonstrate parts of the 
+    library's functionality and capabilities. It is free to use, copy
+    and edit without restrictions.
 
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 FraDnklinD Street, Fifth Floor, Boston, MA  02110-1301  DDDCEEEEE
 */
 
 #include <Zforce.h>
 #include <Keyboard.h>
 #include <Mouse.h>
 
-#define DATA_READY PIN_NN_DR // change "PIN_NN_DR" to assigned i/o digital pin
+#define DATA_READY PIN_NN_DR // change "PIN_NN_DR" to assigned GPIO digital pin
 
 long globalMillis = millis();         // global timestamp
-const int keyboardBoundary = 750;     // separate mouse area and keyboard area on the x-axis by 75 mm.
+const int keyboardBoundary = 750;     // set boundary between mouse and keyboard areas on the x-axis to 75 mm.
 const int holdTime = 150;             // sensitivity for mouse "left-click", unit in milli-second
 
 TouchData previousTouch;
@@ -37,7 +30,7 @@ void setup()
   Serial.println("zforce start");
   zforce.Start(DATA_READY);
 
-  Message* msg = NULL;
+  Message* msg = nullptr;
   
   zforce.Enable(true);
 
@@ -46,7 +39,7 @@ void setup()
   do
   {
     msg = zforce.GetMessage();
-  } while (msg == NULL);
+  } while (msg == nullptr);
 
   if (msg->type == MessageType::ENABLETYPE)
   {
@@ -62,7 +55,7 @@ void loop()
 {
   Message* touch = zforce.GetMessage();
 
-  if (touch != NULL)
+  if (touch != nullptr)
   {
     if (touch->type == MessageType::TOUCHTYPE)
     {
@@ -74,9 +67,12 @@ void loop()
   }
 }
 
-void loopMouse(int16_t x , int16_t y, int8_t event) {
+void loopMouse(int16_t x , int16_t y, int8_t event)
+{
   if (x <= keyboardBoundary) //return if the touch object is outside mouse area
-    return; 
+  {
+    return;
+  }
 
   switch (event)
   {
@@ -85,7 +81,6 @@ void loopMouse(int16_t x , int16_t y, int8_t event) {
       previousTouch.y =  y;
       globalMillis = millis();
       Serial.println("Mouse Input - DOWN");
-
       break;
 
     case 1: // MOVE event
@@ -107,17 +102,23 @@ void loopMouse(int16_t x , int16_t y, int8_t event) {
       }
       Serial.println("");
       break;
-    default: break;
+
+    default:
+      break;
   }
 }
 
-void loopKeyboard(int16_t x , int16_t y, int8_t event) {
-  if (x > keyboardBoundary) //return if the touch object is inside keyboard area
+void loopKeyboard(int16_t x , int16_t y, int8_t event)
+{
+  if (x > keyboardBoundary) //return if the touch object is outside keyboard area
+  {
     return; 
+  }
 
-  if (event == 0) { // DOWN event
+  // Only act on event == DOWN, i.e. when an object has entered the touch area
+  if (event == 0)
+  {
     //assign Key to the given interval
-    
     if (y < 250)
     {
     Keyboard.print('A'); //Print Key "A"
