@@ -5,11 +5,16 @@ For more information, visit [Neonode homepage](https://neonode.com/).
 
 
 # Introduction
-The library offers an easy way to communicate with the sensor as well as some primitive parsing of the ASN.1 serialized response messages. This makes it easy to get x and y coordinates from touch notifications or set different settings in the sensor. The library does not have support for all messages available in the ASN.1 protocol, however methods for sending and receiving raw ASN.1 message are available and can be used to access the full functionality.
+The library offers an easy way to communicate with the sensor as well as some primitive parsing of the ASN.1 serialized response messages. This makes it easy to get x and y coordinates from touch notifications or set different settings in the sensor. The library does not have support for all messages available in the ASN.1 protocol, however methods for sending and receiving raw ASN.1 message are available and can be used to access the full functionality.  
 
 
-# Support
-Support information, getting started guides, sensor product specification and much more can be found in our [Support Center](https://support.neonode.com/).  
+# Support and additional information
+Support information, user's guides, sensor product specification and much more can be found in our [Support Center](https://support.neonode.com/).  
+
+- [Neonode Touch Sensor Module User's Guide](https://support.neonode.com/docs/pages/viewpage.action?pageId=101351508)  
+- [zForce Message Specification](https://support.neonode.com/docs/display/AIRTSUsersGuide/Protocol+version+1.12)  
+- [Configuration Parameters Overview](https://support.neonode.com/docs/display/AIRTSUsersGuide/Parameter+Overview)  
+- [zForce Programmer](https://support.neonode.com/docs/display/ZFPUG/)
 
 # Supported platforms and hardware
 
@@ -28,7 +33,7 @@ Neonode generally recommends using the latest firmware compatible with Your sens
 # How to use the library
 
 ## Main Loop
-The library is built around using `zforce.GetMessage()` as the main method for reading messages from the sensor. The `GetMessage()` method checks if the data ready pin is high and, if it is, reads the awaiting message from the sensor. The received message is then parsed and a pointer to a `Message` is returned.
+The library is built around using `zforce.GetMessage()` as the main method for reading messages from the sensor. The `GetMessage()` method checks if the data ready pin is high and, if it is, reads the awaiting message from the sensor. The received message is then parsed and a pointer to a `Message` is returned.  
 ```C++
 Message* Zforce::GetMessage()
 {
@@ -45,7 +50,7 @@ Message* Zforce::GetMessage()
   return msg;
 }
 ```
-A successful `GetMessage()` call will allocate memory for the new `Message` dynamically. It is up to the end user to destroy the message by calling `zforce.DestroyMessage()` when the message information is no longer needed.
+A successful `GetMessage()` call will allocate memory for the new `Message` dynamically. It is up to the end user to destroy the message by calling `zforce.DestroyMessage()` when the message information is no longer needed.  
 
 ## Send and Read Messages
 The library has support for setting some basic configuration parameters in the sensor, for example `zforce.SetTouchActiveArea()`. When writing any message to the sensor, the end user has to make sure that data ready signal is `LOW` before writing (i.e. there must be no messages awaiting to be read from the sensor). If data ready signal is `HIGH`, `GetMessage()` method needs to be called until `nullptr` is received as response, indicating there are no more messages awaiting in the sensor.  
@@ -56,11 +61,13 @@ When a message has been sent, the sensor always creates a response that has to b
 #### 1.xx firmware
 Firmwares of versions 1.xx _do not_ support persistent storage of configuration parameters. The user must make sure the sensor is configured for the user's need after every startup and after every reset. A received message of type `BOOTCOMPLETE` indicates that the sensor has started up and is ready to be configured.  
 #### 2.xx firmware
-Firmware of versions 2.xx _do_ support both persistent storage of configuration parameters and configuration at runtime. Parameters set at runtime will _not_ be stored persistently. To alter the persistent configuration a separate tool is needed, see [Neonode Support Center](https://support.neonode.com/).  
+Firmware of versions 2.xx _do_ support both persistent storage of configuration parameters and configuration at runtime. Configuration parameters set at runtime will _not_ be stored persistently in the sensor. To alter the persistent configuration a separate tool is needed, see [zForce Programmer](https://support.neonode.com/docs/display/ZFPUG/) at [Neonode Support Center](https://support.neonode.com/).  
+### Configuration Parameters
+An overview of the configuration parameters can be found  
 
 **NOTE:** All configuration of the sensor should be done before sensor is initialized using `Start()` method.  
 
-**Code Example:**
+**Code Example:**  
 ```C++
 // Make sure that there is nothing in the I2C buffer before writing to the sensor
 Message* msg = zforce.GetMessage();
@@ -95,12 +102,12 @@ if(msg->type == MessageType::TOUCHACTIVEAREATYPE)
 zforce.DestroyMessage(msg);
 ```
 
-# Method Overview
+# Methods Overview
 
 
 ## Public Methods
 
-**NOTE:** On some platforms, there will be no error signalled if low level I2C communication fails. This is due to shortcomings in underlying I2C libraries.
+**NOTE:** On some platforms, there will be no error signalled if low level I2C communication fails. This is due to shortcomings in underlying I2C libraries.  
 
 | Return Type   | Method | Parameters |Description | Return |
 | --- | --- | --- | --- | --- |
