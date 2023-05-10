@@ -1,4 +1,4 @@
-# Neonode Touch Sensor Module interface library for Arduino
+# Neonode Touch Sensor Module Interface library for Arduino
 
 An Arduino library for communicating with the _Neonode Touch Sensor Module_ optical touch sensor. Handles the fundamental BER encoded ASN.1 messages communicated over I2C.  
 For more information, visit [Neonode homepage](https://neonode.com/).  
@@ -8,7 +8,7 @@ For more information, visit [Neonode homepage](https://neonode.com/).
 The library offers an easy way to communicate with the sensor as well as some primitive parsing of the ASN.1 serialized response messages. This makes it easy to get x and y coordinates from touch notifications or set different settings in the sensor. The library does not have support for all messages available in the ASN.1 protocol, however methods for sending and receiving raw ASN.1 message are available and can be used to access the full functionality.  
 
 
-# Support and additional information
+# Support and Additional information
 Support information, user's guides, sensor product specification and much more can be found in our [Support Center](https://support.neonode.com/).  
 
 - [Neonode Touch Sensor Module User's Guide](https://support.neonode.com/docs/pages/viewpage.action?pageId=101351508)  
@@ -16,7 +16,7 @@ Support information, user's guides, sensor product specification and much more c
 - [Configuration Parameters Overview](https://support.neonode.com/docs/display/AIRTSUsersGuide/Parameter+Overview)  
 - [zForce Programmer](https://support.neonode.com/docs/display/ZFPUG/)
 
-# Supported platforms and hardware
+# Supported Platforms and Hardware
 
 ## Platforms
 
@@ -30,7 +30,7 @@ Other platforms might work as well.
 All commercially available _Neonode Touch Sensor Modules_ are supported (this excludes customer specific firmwares).  
 Neonode generally recommends using the latest firmware compatible with Your sensor, visit [Neonode Support Center](https://support.neonode.com/) to download latest firmware.  
 
-# How to use the library
+# How to Use the library
 
 ## Main Loop
 The library is built around using `zforce.GetMessage()` as the main method for reading messages from the sensor. The `GetMessage()` method checks if the data ready pin is high and, if it is, reads the awaiting message from the sensor. The received message is then parsed and a pointer to a `Message` is returned.  
@@ -57,7 +57,7 @@ The library has support for setting some basic configuration parameters in the s
 
 When a message has been sent, the sensor always creates a response that has to be read by the host. It could take some time for the sensor to create the response and put it in the I2C buffer, which is why it is recommended to call the `GetMessage()` method in a do-while loop after sending a request.  
 
-### Configuration of the sensor
+### Configuration of the Sensor
 #### 1.xx firmware
 Firmwares of versions 1.xx _do not_ support persistent storage of configuration parameters. The user must make sure the sensor is configured for the user's need after every startup and after every reset. A received message of type `BOOTCOMPLETE` indicates that the sensor has started up and is ready to be configured.  
 #### 2.xx firmware
