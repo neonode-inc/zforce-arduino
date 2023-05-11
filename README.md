@@ -28,7 +28,7 @@ Other platforms might work as well.
 
 ## Touch Sensor Modules
 All commercially available _Neonode Touch Sensor Modules_ are supported (this excludes customer specific firmwares).  
-Neonode generally recommends using the latest firmware compatible with Your sensor, visit [Neonode Support Center](https://support.neonode.com/) to download latest firmware.  
+Neonode generally recommends using the latest firmware compatible with your sensor, visit [Neonode Support Center](https://support.neonode.com/) to download latest firmware.  
 
 # How to Use the library
 

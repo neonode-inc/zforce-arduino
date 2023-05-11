@@ -9,9 +9,11 @@
     and edit without restrictions.
 
 */
+
 #include <Zforce.h>
 
-#define DATA_READY PIN_NN_DR // change "PIN_NN_DR" to assigned GPIO digital pin
+// IMPORTANT: change "13" to assigned GPIO digital pin for dataReady signal in your setup:
+#define DATA_READY 13
 
 void setup()
 {

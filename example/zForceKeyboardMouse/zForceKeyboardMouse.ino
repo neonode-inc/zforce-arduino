@@ -14,7 +14,8 @@
 #include <Keyboard.h>
 #include <Mouse.h>
 
-#define DATA_READY PIN_NN_DR // change "PIN_NN_DR" to assigned GPIO digital pin
+// IMPORTANT: change "13" to assigned GPIO digital pin for dataReady signal in your setup:
+#define DATA_READY 13
 
 long globalMillis = millis();         // global timestamp
 const int keyboardBoundary = 750;     // set boundary between mouse and keyboard areas on the x-axis to 75 mm.
