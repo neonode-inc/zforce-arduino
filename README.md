@@ -63,7 +63,7 @@ Firmwares of versions 1.xx _do not_ support persistent storage of configuration 
 #### 2.xx firmware
 Firmware of versions 2.xx _do_ support both persistent storage of configuration parameters and configuration at runtime. Configuration parameters set at runtime will _not_ be stored persistently in the sensor. To alter the persistent configuration a separate tool is needed, see [zForce Programmer](https://support.neonode.com/docs/display/ZFPUG/) at [Neonode Support Center](https://support.neonode.com/).  
 ### Configuration Parameters
-An overview of the configuration parameters can be found  
+An overview of the configuration parameters can be found here: [Configuration Parameters Overview](https://support.neonode.com/docs/display/AIRTSUsersGuide/Parameter+Overview)  
 
 **NOTE:** All configuration of the sensor should be done before sensor is initialized using `Start()` method.  
 
