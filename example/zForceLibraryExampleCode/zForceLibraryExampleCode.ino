@@ -12,8 +12,8 @@
 
 #include <Zforce.h>
 
-// IMPORTANT: change "13" to assigned GPIO digital pin for dataReady signal in your setup:
-#define DATA_READY 13
+// IMPORTANT: change "1" to assigned GPIO digital pin for dataReady signal in your setup:
+#define DATA_READY 1
 
 void setup()
 {
