@@ -21,7 +21,7 @@ Support information, user's guides, sensor product specification and much more c
 ## Platforms
 
 The library version 1.8 has been tested on and officially supports these platforms:  
-- Arduino UNO  
+- Arduino Uno Rev3
 - Raspberry Pi Pico  
 
 Other platforms might work as well.  
@@ -34,23 +34,8 @@ Neonode generally recommends using the latest firmware compatible with your sens
 
 ## Main Loop
 The library is built around using `zforce.GetMessage()` as the main method for reading messages from the sensor. The `GetMessage()` method checks if the data ready pin is high and, if it is, reads the awaiting message from the sensor. The received message is then parsed and a pointer to a `Message` is returned.  
-```C++
-Message* Zforce::GetMessage()
-{
-  Message* msg = nullptr;
-  if(GetDataReady() == HIGH)
-  {
-    if(!Read(buffer))
-    {
-      msg = VirtualParse(buffer);
-      ClearBuffer(buffer);
-    }
-  }
-   
-  return msg;
-}
-```
 A successful `GetMessage()` call will allocate memory for the new `Message` dynamically. It is up to the end user to destroy the message by calling `zforce.DestroyMessage()` when the message information is no longer needed.  
+Please check the supplied example code for usage examples.
 
 ## Send and Read Messages
 The library has support for setting some basic configuration parameters in the sensor, for example `zforce.SetTouchActiveArea()`. When writing any message to the sensor, the end user has to make sure that data ready signal is `LOW` before writing (i.e. there must be no messages awaiting to be read from the sensor). If data ready signal is `HIGH`, `GetMessage()` method needs to be called until `nullptr` is received as response, indicating there are no more messages awaiting in the sensor.  
@@ -59,7 +44,7 @@ When a message has been sent, the sensor always creates a response that has to b
 
 ### Configuration of the Sensor
 #### 1.xx firmware
-Firmwares of versions 1.xx _do not_ support persistent storage of configuration parameters. The user must make sure the sensor is configured for the user's need after every startup and after every reset. A received message of type `BOOTCOMPLETE` indicates that the sensor has started up and is ready to be configured.  
+Firmwares of versions 1.xx _do not_ support persistent storage of configuration parameters. The user must make sure the sensor is configured for the user's need after every startup and after every reset. A received message of type `BOOTCOMPLETE` indicates that the sensor has started up and is ready to be configured. See code example below.  
 #### 2.xx firmware
 Firmware of versions 2.xx _do_ support both persistent storage of configuration parameters and configuration at runtime. Configuration parameters set at runtime will _not_ be stored persistently in the sensor. To alter the persistent configuration a separate tool is needed, see [zForce Programmer](https://support.neonode.com/docs/display/ZFPUG/) at [Neonode Support Center](https://support.neonode.com/).  
 ### Configuration Parameters
@@ -151,4 +136,31 @@ zforce.DestroyMessage(msg);
 ## zForce Arduino Library 1.8.0
 
 
-**[TODO: Add public release notes]**
+### Contents of Release
+- Neonode zForce Library version 1.8.0 in source form at Neonode's GitHub public repository.
+
+### Main Features
+
+- Added configurable I2C address to support touch sensors configured with non-default I2C address.
+- New functionality for sending and receiving raw ASN.1 messages:
+  - method: SendRawMessage
+  - method: ReceiveRawMessage
+- Added functionality for reading sensor ID:
+- method: GetPlatformInformation
+  - member: FirmwareVersionMajor
+  - member: FirmwareVersionMinor
+  - member: MCUUniqueIdentifier
+- Support for ASN.1 messages up to 255 bytes (was 127 bytes in earlier versions).
+- Enable method now also sets the sensor in digitizer mode before enabling.
+
+### Bugfixes
+
+- Touch notification timestamp fixed.
+- Corrections to Enable method.
+- Corrections to Frequency method.
+- Corrections to TouchMode method.
+- Corrections to FloatingProtection method.
+- Corrections to TouchFormat method.
+
+### Known Issues
+- None.
