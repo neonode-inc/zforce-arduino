@@ -116,23 +116,23 @@ zforce.DestroyMessage(msg);
 | `void` | `Start` | `int dataReady`, `int i2cAddress` | Initialize communication with the sensor including starting the I2C connection and configure the dataReady pin and I2C address according to provided parameters. | None |
 | `int` | `Read` | `uint8_t* payload` | Initiates an I2C read sequence. Response is copied to `payload` array. No parsing of the received message is done and no `Message` is created. <BR> **CAUTION:** The user must ensure that sufficient space is available in `payload` to hold the complete I2C message. <BR> *Recommendation:* For reading raw ASN.1 messages it is advised to use the `ReceiveRawMessage` method instead. | Error code according to the Atmel data sheet if an Atmel platform is used. 0 for success. Non-Atmel platforms will always return 0. |
 | `int` | `Write` | `uint8_t* payload` | Initiates an I2C write sequence. Data from `payload` array is sent. <BR> *IMPORTANT:* For a successful write to the sensor, it is expected that `payload[0]` = `0xEE` and `payload[1]` = length of the subsequent ASN.1 message to send. <BR> *Recommendation:* For sending raw ASN.1 messages, it is advised to use `SendRawMessage()` instead. | Error code according to the Atmel data sheet if an Atmel platform is used. 0 for success.  Non-Atmel platforms will always return 0. |
-| `bool` | `SendRawMessage` | `uint8_t* payload`, `uint8_t payloadLength` | Sends a custom formatted raw ASN.1 message to the sensor. `payload` is a pointer to the buffer containing the ASN.1 message to send. `payloadLength` is the length of the message to send. `SendRawMessage` is the preferred method for writing custom ASN.1 serialized messages to the sensor. | `true` if successful, otherwise `false` ^*^. |
+| `bool` | `SendRawMessage` | `uint8_t* payload`, `uint8_t payloadLength` | Sends a custom formatted raw ASN.1 message to the sensor. `payload` is a pointer to the buffer containing the ASN.1 message to send. `payloadLength` is the length of the message to send. `SendRawMessage` is the preferred method for writing custom ASN.1 serialized messages to the sensor. | `true` if successful, otherwise `false` *. |
 | `bool` | `ReceiveRawMessage` | `uint8_t* receivedLength`, `uint16_t *remainingLength` | Receive a raw ASN.1 message. No parsing of the message is done and no `Message` is created. The only validation done is decoding the initial ASN.1 payload length to see if more data should follow. `receivedLength` is a pointer to where the size of the returned data should be placed. `remainingLength` is a pointer to where the size of the remaining data should be placed, if any. `ReceiveRawMessage` is the preferred method for reading raw ASN.1 serialized messages directly from the sensor. <BR> **CAUTION:** Any subsequent read or write operations, even reading notifications, touches, etc will _overwrite_ the message receive buffer, so make sure to copy any data you want to save. | If successful, a pointer to the ASN.1 payload of the received data is returned, otherwise `nullptr` is returned. The length of the message received is stored in `receivedLength` and length of remaining data the sensor has to send is stored in `remainingLength`. |
-| `uint8_t` | `Enable` | `bool isEnabled` | Enables the sensor for sending touch notifications. Operation mode is set to normal detection mode and sensor is enabled. | `true` if successful, otherwise `false` ^*^.|
-| `bool` | `GetEnable` | `None` | Gets the current enable status of the sensor. Useful to make sure if there is a sensor connected or just a check to see if it is currently disabled or enabled. | `true` if successful, otherwise `false` ^*^.  |
-| `bool` | `TouchActiveArea` | `uint16_t minX`, `uint16_t minY`, `uint16_t maxX`, `uint16_t maxY` | Writes a touch active area configuration message to the sensor with the passed parameters. | `true` if the write succeeded, otherwise `false` ^*^. |
-| `bool` | `FlipXY` | `bool isFlipped` | Writes a flip-xy configuration message to the sensor with the passed parameters. | `true` if the write succeeded, otherwise `false` ^*^. |
-| `bool` | `ReverseX` | `bool isReversed` | Writes a reverse x configuration message to the sensor with the passed parameters. | `true` if the write succeeded, otherwise `false` ^*^. |
-| `bool` | `ReverseY` | `bool isReversed` | Writes a reverse y configuration message to the sensor with the passed parameters. | `true` if the write succeeded, otherwise `false` ^*^. |
-| `bool` | `Frequency` | `uint16_t idleFrequency`, `uint16_t fingerFrequency` | Writes a frequency configuration message to the sensor with the passed parameters. | `true` if the write succeeded, otherwise `false` ^*^. |
-| `bool` | `ReportedTouches` | `uint8_t touches` | Writes a reported touches configuration message to the sensor with the passed parameters. | `true` if the write succeeded, otherwise `false` ^*^. |
-| `bool` | `DetectionMode` | `bool mergeTouches`, `bool reflectiveEdgeFilter` | Writes a detection mode configuration message to the sensor with the passed parameters.  <BR> *NOTE:* Firmware versions 2.xx does _not_ support mergeTouches. | `true` if the write succeeded, otherwise `false` ^*^. |
-| `bool` | `TouchMode` | `uint8_t mode`, `int16_t clickOnTouchRadius`, `int16_t clickOnTouchTime` | Writes a touchMode configuration message to the sensor with the passed parameters. Valid modes: 0 = normal, 1 =  clickOnTouch.  <BR> *NOTE:* Some sensor firmware will not return clickOnTouchRadius or clickOnTouchTime in response message if mode is set = normal. In this case, these values will be set to -1 in the parsed response Message received using `GetMessage()` method.| `true` if the write succeeded, otherwise `false` ^*^. |
-| `bool` | `FloatingProtection` | `bool enabled`, `uint16_t time` | Writes a floating protection configuration message to the sensor with the passed parameters. | `true` if the write succeeded, otherwise `false` ^*^. |
+| `uint8_t` | `Enable` | `bool isEnabled` | Enables the sensor for sending touch notifications. Operation mode is set to normal detection mode and sensor is enabled. | `true` if successful, otherwise `false` *.|
+| `bool` | `GetEnable` | `None` | Gets the current enable status of the sensor. Useful to make sure if there is a sensor connected or just a check to see if it is currently disabled or enabled. | `true` if successful, otherwise `false` *.  |
+| `bool` | `TouchActiveArea` | `uint16_t minX`, `uint16_t minY`, `uint16_t maxX`, `uint16_t maxY` | Writes a touch active area configuration message to the sensor with the passed parameters. | `true` if the write succeeded, otherwise `false` *. |
+| `bool` | `FlipXY` | `bool isFlipped` | Writes a flip-xy configuration message to the sensor with the passed parameters. | `true` if the write succeeded, otherwise `false` *. |
+| `bool` | `ReverseX` | `bool isReversed` | Writes a reverse x configuration message to the sensor with the passed parameters. | `true` if the write succeeded, otherwise `false` *. |
+| `bool` | `ReverseY` | `bool isReversed` | Writes a reverse y configuration message to the sensor with the passed parameters. | `true` if the write succeeded, otherwise `false` *. |
+| `bool` | `Frequency` | `uint16_t idleFrequency`, `uint16_t fingerFrequency` | Writes a frequency configuration message to the sensor with the passed parameters. | `true` if the write succeeded, otherwise `false` *. |
+| `bool` | `ReportedTouches` | `uint8_t touches` | Writes a reported touches configuration message to the sensor with the passed parameters. | `true` if the write succeeded, otherwise `false` *. |
+| `bool` | `DetectionMode` | `bool mergeTouches`, `bool reflectiveEdgeFilter` | Writes a detection mode configuration message to the sensor with the passed parameters.  <BR> *NOTE:* Firmware versions 2.xx does _not_ support mergeTouches. | `true` if the write succeeded, otherwise `false` *. |
+| `bool` | `TouchMode` | `uint8_t mode`, `int16_t clickOnTouchRadius`, `int16_t clickOnTouchTime` | Writes a touchMode configuration message to the sensor with the passed parameters. Valid modes: 0 = normal, 1 =  clickOnTouch.  <BR> *NOTE:* Some sensor firmware will not return clickOnTouchRadius or clickOnTouchTime in response message if mode is set = normal. In this case, these values will be set to -1 in the parsed response Message received using `GetMessage()` method.| `true` if the write succeeded, otherwise `false` *. |
+| `bool` | `FloatingProtection` | `bool enabled`, `uint16_t time` | Writes a floating protection configuration message to the sensor with the passed parameters. | `true` if the write succeeded, otherwise `false` *. |
 | `int` | `GetDataReady` | None | Performs a digital read on the data ready pin. | The current status of the data ready pin (`HIGH`/ `LOW`). |
 | `Message*` | `GetMessage` | None | Reads and parses a message from the sensor if data ready signal is `HIGH`. |  A pointer to a `Message` with parsed content if a read was successful, otherwise `nullptr`. |
 | `void` | `DestroyMessage` | `Message* msg` | Deletes the pointed message null. | None |
-| `bool` | `GetPlatformInformation` | None | Requests firmware version and MCU ID from sensor. This method is automatically called as part of `Start()` method and stores values in class members `FirmwareVersionMajor`, `FirmwareVersionMinor`, `MCUUniqueIdentifier`. | `true` if write succeeded, otherwise `false` ^*^. | 
+| `bool` | `GetPlatformInformation` | None | Requests firmware version and MCU ID from sensor. This method is automatically called as part of `Start()` method and stores values in class members `FirmwareVersionMajor`, `FirmwareVersionMinor`, `MCUUniqueIdentifier`. | `true` if write succeeded, otherwise `false` *. | 
 
 *) On non-Atmel platforms, there will be no error signalled if low level I2C communication fails. This is due to shortcomings in underlying I2C library.  
 
@@ -141,13 +141,14 @@ zforce.DestroyMessage(msg);
 | Type   | Name | Description |
 | --- | --- | --- |
 | `uint8_t` | `FirmwareVersionMajor` | Sensor firmware version, major. Set when sensor is initialized by calling the `Start()` method. |
-| `uint8_t` | `FirmwareVersionMinor` | Sensor firmware version, minor. Set when sensor is initialized by calling the `Start()`. |
-| `char*` | `MCUUniqueIdentifier` |  Pointer to string holding the sensor's MCU ID. Set when sensor is initialized by calling the `Start()`. |
-
+| `uint8_t` | `FirmwareVersionMinor` | Sensor firmware version, minor. Set when sensor is initialized by calling the `Start()` method. |
+| `char*` | `MCUUniqueIdentifier` |  Pointer to string holding the sensor's MCU ID. Set when sensor is initialized by calling the `Start()` method. |
 
 
 # Release notes
 
-## zForce Arduino Library 1.8
+
+## zForce Arduino Library 1.8.0
+
 
 **[TODO: Add public release notes]**
