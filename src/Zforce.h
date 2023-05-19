@@ -1,6 +1,6 @@
 /*  Neonode zForce v7 interface library for Arduino
 
-    Copyright (C) 2019 Neonode Inc.
+    Copyright (C) 2019-2023 Neonode Inc.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
