@@ -1,0 +1,31 @@
+name: SimpleBuild
+on: push
+jobs:
+  build:
+    name: Test compiling examples
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        arduino-boards-fqbn:
+          - arduino:avr:uno
+
+        include:
+          - arduino-boards-fqbn: arduino:avr:uno
+            sketches-exclude: zForceKeyboardMouse
+
+          - arduino-boards-fqbn: neonode:samd:euseniot_neonode_adapter
+            platform-url: https://raw.githubusercontent.com/neonode-inc/zforce-arduino-board-devenv/master/package_neonode_index.json
+            required-libraries: Keyboard,Mouse
+
+      fail-fast: false
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Compile all examples
+      uses: ArminJo/arduino-test-compile@v3
+      with:
+          arduino-board-fqbn: ${{ matrix.arduino-boards-fqbn }}
+          platform-url: ${{ matrix.platform-url }}
+          sketches-exclude: ${{ matrix.sketches-exclude }}
+          required-libraries: ${{ matrix.required-libraries }}

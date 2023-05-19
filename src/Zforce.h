@@ -1,6 +1,6 @@
 /*  Neonode zForce v7 interface library for Arduino
 
-    Copyright (C) 2019 Neonode Inc.
+    Copyright (C) 2019-2023 Neonode Inc.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -18,8 +18,11 @@
 */
 #pragma once
 
-#define MAX_PAYLOAD 127
-#define ZFORCE_I2C_ADDRESS 0x50
+// Largest transaction size, excluding i2c header.
+#define MAX_PAYLOAD 255
+// The buffer must be able to contain both the i2c header, and MAX_PAYLOAD size.
+#define BUFFER_SIZE (MAX_PAYLOAD+2)
+#define ZFORCE_DEFAULT_I2C_ADDRESS 0x50
 
 enum TouchEvent
 {
@@ -45,7 +48,8 @@ enum class MessageType
 	DETECTIONMODETYPE = 10,
 	TOUCHFORMATTYPE = 11,
 	TOUCHMODETYPE = 12,
-	FLOATINGPROTECTIONTYPE = 13
+	FLOATINGPROTECTIONTYPE = 13,
+	PLATFORMINFORMATIONTYPE = 14
 };
 
 typedef struct TouchData
@@ -213,7 +217,20 @@ typedef struct TouchDescriptorMessage : public Message
 
 } TouchDescriptorMessage;
 
-typedef struct FloatingProtectionMessage : public TouchModeMessage
+typedef struct PlatformInformationMessage : public Message
+{
+	virtual ~PlatformInformationMessage()
+	{
+		delete[] mcuUniqueIdentifier;
+		mcuUniqueIdentifier = nullptr;
+	}
+	uint8_t firmwareVersionMajor;
+	uint8_t firmwareVersionMinor;
+	char* mcuUniqueIdentifier;
+	uint8_t mcuUniqueIdentifierLength;
+} PlatformInformationMessage;
+
+typedef struct FloatingProtectionMessage : public Message
 {
 	virtual ~FloatingProtectionMessage()
 	{
@@ -221,7 +238,7 @@ typedef struct FloatingProtectionMessage : public TouchModeMessage
 	}
 	bool enabled;
 	uint16_t time;
-};
+} FloatingProtectionMessage;
 
 typedef struct TouchMetaInformation
 {
@@ -234,8 +251,11 @@ class Zforce
     public:
 		Zforce();
 		void Start(int dr);
+		void Start(int dr, int i2cAddress);
 		int Read(uint8_t* payload);
 		int Write(uint8_t* payload);
+		bool SendRawMessage(uint8_t* payload, uint8_t payloadLength);
+		uint8_t* ReceiveRawMessage(uint8_t* receivedLength, uint16_t *remainingLength);
 		bool Enable(bool isEnabled);
 		bool GetEnable();
 		bool TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16_t maxY);
@@ -251,6 +271,10 @@ class Zforce
 		int GetDataReady();
 		Message* GetMessage();
 		void DestroyMessage(Message * msg);
+		bool GetPlatformInformation();
+		uint8_t FirmwareVersionMajor;
+		uint8_t FirmwareVersionMinor;
+		char* MCUUniqueIdentifier;
     private:
 		Message* VirtualParse(uint8_t* payload);
 		void ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload);
@@ -266,11 +290,19 @@ class Zforce
 		void ParseTouchDescriptor(TouchDescriptorMessage* msg, uint8_t* payload);
 		void ParseTouchMode(TouchModeMessage* msg, uint8_t* payload);
 		void ParseFloatingProtection(FloatingProtectionMessage* msg, uint8_t* payload);
+		void ParsePlatformInformation(PlatformInformationMessage* msg, uint8_t* rawData, uint32_t length);
 		void ClearBuffer(uint8_t* buffer);
-		uint8_t buffer[MAX_PAYLOAD];
+		uint8_t SerializeInt(int32_t value, uint8_t* serialized);
+		void DecodeOctetString(uint8_t* rawData, uint32_t* position, uint32_t* destinationLength, uint8_t** destination);
+		uint16_t GetLength(uint8_t* rawData);
+		uint8_t GetNumLengthBytes(uint8_t* rawData);
+		uint8_t buffer[BUFFER_SIZE];
 		int dataReady;
+		int i2cAddress;
+		uint16_t remainingRawLength;
 		volatile MessageType lastSentMessage;
 		TouchMetaInformation touchMetaInformation;
+		bool touchDescriptorInitialized;
 };
 
 extern Zforce zforce;

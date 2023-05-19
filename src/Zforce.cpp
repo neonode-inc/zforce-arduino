@@ -1,6 +1,6 @@
 /*  Neonode zForce v7 interface library for Arduino
 
-    Copyright (C) 2019 Neonode Inc.
+    Copyright (C) 2019-2023 Neonode Inc.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -33,10 +33,17 @@
 
 Zforce::Zforce()
 {
+  this->remainingRawLength = 0;
 }
 
 void Zforce::Start(int dr)
 {
+  Start(dr, ZFORCE_DEFAULT_I2C_ADDRESS);
+}
+
+void Zforce::Start(int dr, int i2cAddress)
+{
+  this->i2cAddress = i2cAddress;
   dataReady = dr;
   pinMode(dataReady, INPUT);
 #if USE_I2C_LIB == 1
@@ -58,14 +65,40 @@ void Zforce::Start(int dr)
   }
 
   // Get the touch descriptor from the sensor in order to deserialize the touch notifications
-  this->TouchFormat();
+  bool successfulTouchFormatRequest = this->TouchFormat();
+
+  if (successfulTouchFormatRequest)
+  {
+    do
+    {
+      msg = this->GetMessage();
+    } while (msg == nullptr);
+
+    if (msg->type == MessageType::TOUCHFORMATTYPE && touchMetaInformation.touchDescriptor != nullptr)
+    {
+      this->touchDescriptorInitialized = true;
+    }
+
+    this->DestroyMessage(msg);
+  }
+    
+  // Get Platform information
+  this->GetPlatformInformation();
   do
   {
     msg = this->GetMessage();
   } while (msg == nullptr);
 
+  if (msg->type == MessageType::PLATFORMINFORMATIONTYPE)
+  {
+    this->FirmwareVersionMajor = ((PlatformInformationMessage *)msg)->firmwareVersionMajor;
+    this->FirmwareVersionMinor = ((PlatformInformationMessage *)msg)->firmwareVersionMinor;
+    uint8_t length = ((PlatformInformationMessage *)msg)->mcuUniqueIdentifierLength;
+    this->MCUUniqueIdentifier = new char[length + 1];
+    strncpy(this->MCUUniqueIdentifier, ((PlatformInformationMessage *)msg)->mcuUniqueIdentifier, length);
+    this->MCUUniqueIdentifier[length] = '\0';
+  }
   this->DestroyMessage(msg);
- 
 }
 
 int Zforce::Read(uint8_t * payload)
@@ -73,22 +106,22 @@ int Zforce::Read(uint8_t * payload)
 #if USE_I2C_LIB == 1
   int status = 0;
 
-  status = I2c.read(ZFORCE_I2C_ADDRESS, 2);
+  status = I2c.read(this->i2cAddress, 2);
 
   // Read the 2 I2C header bytes.
   payload[0] = I2c.receive();
   payload[1] = I2c.receive();
 
-  status = I2c.read(ZFORCE_I2C_ADDRESS, payload[1], &payload[2]);
+  status = I2c.read(this->i2cAddress, payload[1], &payload[2]);
 
   return status; // return 0 if success, otherwise error code according to Atmel Data Sheet
 #else
-  Wire.requestFrom(ZFORCE_I2C_ADDRESS, 2);
+  Wire.requestFrom(this->i2cAddress, 2);
   payload[0] = Wire.read();
   payload[1] = Wire.read();
   
   int index = 2;
-  Wire.requestFrom(ZFORCE_I2C_ADDRESS, payload[1]);
+  Wire.requestFrom(this->i2cAddress, payload[1]);
   while (Wire.available())
   {
     payload[index++] = Wire.read();
@@ -105,11 +138,11 @@ int Zforce::Write(uint8_t* payload)
 {
 #if USE_I2C_LIB == 1
   int len = payload[1] + 1;
-  int status = I2c.write(ZFORCE_I2C_ADDRESS, payload[0], &payload[1], len);
+  int status = I2c.write(this->i2cAddress, payload[0], &payload[1], len);
 
   return status; // return 0 if success, otherwise error code according to Atmel Data Sheet
 #else
-  Wire.beginTransmission(ZFORCE_I2C_ADDRESS);
+  Wire.beginTransmission(this->i2cAddress);
   Wire.write(payload, payload[1] + 2);
   Wire.endTransmission();
 
@@ -117,13 +150,143 @@ int Zforce::Write(uint8_t* payload)
 #endif
 }
 
+/*
+ * Send the octet array containing an ASN.1 command as is, without validation.
+ * If you need to send more than 255 bytes, call it more times with new data until done.
+ *
+ * payload        Pointer to the octet buffer containing the ASN.1 payload to send.
+ * payloadLength  Length of the data to send.
+ *
+ * Return Value   true for successful send and false if any error occured.
+ *                Sadly, some Arduino i2c drivers do not signal errors.
+ */
+bool Zforce::SendRawMessage(uint8_t* payload, uint8_t payloadLength)
+{
+  if ((payload == nullptr) || (payloadLength == 0))
+  {
+    return false;
+  }
+
+  buffer[0] = 0xEE;
+  buffer[1] = payloadLength;
+  memcpy(&buffer[2], payload, payloadLength);
+
+  return Write(buffer) == 0;
+}
+
+/*
+ * Receive a raw ASN.1 message. The only validation done is decoding the initial ASN.1 payload length
+ * to see if more data should follow.
+ *
+ * receivedLength   A pointer to where the size of the returned data should be placed.
+ * remainingLength  A pointer to where the size of the remaining data should be placed, if any.
+ *
+ * Return value     If an error occured (see comment above for the return value of SendRawMessage),
+ *                  the pointer will be nullptr.
+ *                  A pointer to the ASN.1 payload of the received data is returned.
+ *                  Note, that any subsequent read or write-operation, even notifications, touches, etc will
+ *                  will overwrite the buffer, so make sure to copy any data you want to save.
+ */
+uint8_t* Zforce::ReceiveRawMessage(uint8_t* receivedLength, uint16_t *remainingLength)
+{
+  if ((GetDataReady() == HIGH) && !Read(buffer))
+  {
+    uint8_t i2cPayloadLength = buffer[1];
+    // Check if this is a second or first call.
+    if (this->remainingRawLength == 0)
+    {
+      // This is the first invocation.
+      // Check if it's a short, 2, or 3 byte length encoding.
+      uint8_t firstLengthByte = buffer[3];
+      uint16_t asn1AfterHeaderLength;
+      uint8_t asn1HeaderLength = 2; // EE/EF/F0 + First byte of length.
+      if (firstLengthByte < 0x80)
+      {
+        // Short form. Lower 7 bits are the length, but since the high bit is 0, we don't need to & 0x7F to get the lower 7.
+        asn1AfterHeaderLength = firstLengthByte;
+      }
+      else
+      {
+        // Long form. First byte's top bit is set. The lower 7 bits contain the number of length bytes.
+        // The following 1 or 2 bytes contain the actual length, in Big Endian / Motorola Byte Order encoding.
+        uint8_t numberOfLengthBytes = (firstLengthByte & 0x7F);
+        asn1HeaderLength += numberOfLengthBytes;
+        asn1AfterHeaderLength = buffer[4];
+        if (numberOfLengthBytes == 2)
+        {
+          asn1AfterHeaderLength <<= 8;
+          asn1AfterHeaderLength += buffer[5];
+        }
+        else if (numberOfLengthBytes != 1)
+        {
+          // The data is most likely corrupted. Valid numbers are 1 and 2.
+          *receivedLength = 0;
+          *remainingLength = 0;
+          return nullptr;
+        }
+      }
+      uint16_t fullAsn1MessageLength = asn1AfterHeaderLength + asn1HeaderLength;
+      // Full is the full ASN.1 payload, which can be split over several i2c payloads.
+      this->remainingRawLength = fullAsn1MessageLength - i2cPayloadLength;
+      *remainingLength = this->remainingRawLength;
+      *receivedLength = i2cPayloadLength;
+    }
+    else
+    {
+      // Since this is the second or later invocation, we do NOT parse the ASN.1, since it
+      // may well be in the middle of some data, and we already know the lengths.
+      this->remainingRawLength -= i2cPayloadLength;
+      *remainingLength = this->remainingRawLength;
+      *receivedLength = i2cPayloadLength;
+    }
+  }
+  else
+  {
+    // Either Data Ready was not high, or the read failed.
+    *remainingLength = 0;
+    *receivedLength = 0;
+    return nullptr;
+  }
+
+  return &buffer[2]; // Skipping the i2c header in the response.
+}
+
 bool Zforce::Enable(bool isEnabled)
 {
   bool failed = false;
+  int returnCode;
 
-  uint8_t enable[] = {0xEE, 0x0A, 0xEE, 0x08, 0x40, 0x02, 0x02, 0x00, 0x65, 0x02, (uint8_t)(isEnabled ? 0x81 : 0x80), 0x00};
+  uint8_t enable[] =  {0xEE, 0x0B, 0xEE, 0x09, 0x40, 0x02, 0x02, 0x00, 0x65, 0x03, 0x81, 0x01, 0x00};
+  uint8_t disable[] = {0xEE, 0x0A, 0xEE, 0x08, 0x40, 0x02, 0x02, 0x00, 0x65, 0x02, 0x80, 0x00};
+  uint8_t operationMode[] = {0xEE, 0x17, 0xEE, 0x15, 0x40, 0x02, 0x02, 0x00, 0x67, 0x0F, 0x80, 0x01, 0xFF, 0x81, 0x01, 0x00, 0x82, 0x01, 0x00, 0x83, 0x01, 0x00, 0x84, 0x01, 0x00};
 
-  if (Write(enable)) // We assume that the end user has called GetMessage prior to calling this method
+  // We assume that the end user has called GetMessage prior to calling this method
+  if (isEnabled)
+  {
+    returnCode = Write(operationMode);
+    if (returnCode != 0)
+    {
+      failed = true;
+    }
+    else
+    {
+      Message* msg = nullptr;
+      do
+      {
+        msg = this->GetMessage();
+      } while (msg == nullptr);
+
+      this->DestroyMessage(msg);
+
+      returnCode = Write(enable);
+    }
+  }
+  else 
+  {
+    returnCode = Write(disable);
+  }
+
+  if (returnCode != 0)
   {
     failed = true;
   }
@@ -156,14 +319,79 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
 {
   bool failed = false;
 
-  const uint8_t length = 16;
+  uint8_t touchActiveAreaPayloadLength = 2 * 4;
+  // 2 bytes * 4 entries. Not counting the actual values, which are 1 or 2 bytes.
 
-  uint8_t touchActiveArea[] = {0xEE, length + 10, 0xEE, length + 8,
-                               0x40, 0x02, 0x02, 0x00, 0x73, length + 2, 0xA2, length,
-                               0x80, 0x02, (uint8_t)(minX >> 8), (uint8_t)(minX & 0xFF),
-                               0x81, 0x02, (uint8_t)(minY >> 8), (uint8_t)(minY & 0xFF),
-                               0x82, 0x02, (uint8_t)(maxX >> 8), (uint8_t)(maxX & 0xFF),
-                               0x83, 0x02, (uint8_t)(maxY >> 8), (uint8_t)(maxY & 0xFF)};
+  // Each value that is >127 gets an extra byte.
+
+  uint8_t minXValue[2];
+  uint8_t minYValue[2];
+  uint8_t maxXValue[2];
+  uint8_t maxYValue[2];
+
+  uint8_t minXLength = SerializeInt(minX, minXValue);
+  uint8_t minYLength = SerializeInt(minY, minYValue);
+  uint8_t maxXLength = SerializeInt(maxX, maxXValue);
+  uint8_t maxYLength = SerializeInt(maxY, maxYValue);
+
+  touchActiveAreaPayloadLength += minXLength;
+  touchActiveAreaPayloadLength += minYLength;
+  touchActiveAreaPayloadLength += maxXLength;
+  touchActiveAreaPayloadLength += maxYLength;
+
+#define TAA_ALLHEADERSSIZE (2 + 2 + 4 + 4)
+
+  uint8_t totalLength = TAA_ALLHEADERSSIZE + touchActiveAreaPayloadLength;
+  // 2 bytes I2C header: 0xEE + 1 byte for Length. Length: totalLength - 2.
+  // 2 bytes for Request: 0xEE + 1 byte for Length. Length: totalLength - 4.
+  // 4 bytes for Address: 0x40, 0x02, 0x02, 0x00.
+  // 4 bytes for touchActiveArea payload headers: 0x73, touchActiveAreaPayloadLength + 2, 0xA2, touchActiveAreaPayloadLength.
+  // X bytes for the actual payload (calculated above).
+
+  uint8_t touchActiveArea[totalLength] = { 0xEE, (uint8_t)(totalLength - 2),
+                                           0xEE, (uint8_t)(totalLength - 4),
+                                           0x40, 0x02, 0x02, 0x00,
+                                           0x73, (uint8_t)(touchActiveAreaPayloadLength + 2), 0xA2, touchActiveAreaPayloadLength };
+
+  size_t offset = TAA_ALLHEADERSSIZE;
+
+  // Each value <= 127 is 1 byte, above is 2 bytes.
+
+  // MinX.
+  touchActiveArea[offset++] = 0x80; // MinX identifier.
+  touchActiveArea[offset++] = minXLength;
+  touchActiveArea[offset++] = (uint8_t)minXValue[0];
+  if (minXLength == 2)
+  {
+    touchActiveArea[offset++] = (uint8_t)minXValue[1];
+  }
+
+  // MinY.
+  touchActiveArea[offset++] = 0x81; // MinY identifier.
+  touchActiveArea[offset++] = minYLength;
+  touchActiveArea[offset++] = (uint8_t)minYValue[0];
+  if (minYLength == 2)
+  {
+    touchActiveArea[offset++] = (uint8_t)minYValue[1];
+  }
+
+  // MaxX.
+  touchActiveArea[offset++] = 0x82; // MaxX identifier.
+  touchActiveArea[offset++] = maxXLength;
+  touchActiveArea[offset++] = (uint8_t)maxXValue[0];
+  if (maxXLength == 2)
+  {
+    touchActiveArea[offset++] = (uint8_t)maxXValue[1];
+  }
+
+  // MaxY.
+  touchActiveArea[offset++] = 0x83; // MaxY identifier.
+  touchActiveArea[offset++] = maxYLength;
+  touchActiveArea[offset++] = (uint8_t)maxYValue[0];
+  if (maxYLength == 2)
+  {
+    touchActiveArea[offset++] = (uint8_t)maxYValue[1];
+  }
 
   if (Write(touchActiveArea)) // We assume that the end user has called GetMessage prior to calling this method
   {
@@ -179,26 +407,68 @@ bool Zforce::TouchActiveArea(uint16_t minX, uint16_t minY, uint16_t maxX, uint16
 
 bool Zforce::Frequency(uint16_t idleFrequency, uint16_t fingerFrequency)
 {
-    bool failed = false;
+  bool failed = false;
 
-    const uint8_t length = 8;
+  uint8_t frequencyPayloadLength = 2 * 2;
+  // 2 bytes * 2 entries. Not counting the actual values, which are 1 or 2 bytes.
 
-    uint8_t frequency[] = { 0xEE, length + 8, 0xEE, length + 6,
-                            0x40, 0x02, 0x02, 0x00, 0x68, length,
-                            0x80, 0x02, (uint8_t)(fingerFrequency >> 8), (uint8_t)(fingerFrequency & 0xFF),
-                            0x82, 0x02, (uint8_t)(idleFrequency   >> 8), (uint8_t)(idleFrequency   & 0xFF)};
+  // Each value that is >127 gets an extra byte.
 
+  uint8_t fingerFrequencyValue[2];
+  uint8_t idleFrequencyValue[2];
 
-    if (Write(frequency)) // We assume that the end user has called GetMessage prior to calling this method
-    {
-        failed = true;
-    }
-    else
-    {
-        lastSentMessage = MessageType::FREQUENCYTYPE;
-    }
+  uint8_t fingerFrequencyLength = SerializeInt(fingerFrequency, fingerFrequencyValue);
+  uint8_t idleFrequencyLength = SerializeInt(idleFrequency, idleFrequencyValue);
 
-    return !failed;
+  frequencyPayloadLength += fingerFrequencyLength;
+  frequencyPayloadLength += idleFrequencyLength;
+
+#define FREQ_ALLHEADERSSIZE (2 + 2 + 4 + 2)
+
+  uint8_t totalLength = FREQ_ALLHEADERSSIZE + frequencyPayloadLength;
+  // 2 bytes I2C header: 0xEE + 1 byte for Length. Length: totalLength - 2.
+  // 2 bytes for Request: 0xEE + 1 byte for Length. Length: totalLength - 4.
+  // 4 bytes for Address: 0x40, 0x02, 0x02, 0x00.
+  // 2 bytes for Frequency payload headers: 0x68, frequencyPayloadLength.
+  // X bytes for the actual payload (calculated above).
+
+  uint8_t frequency[totalLength] = { 0xEE, (uint8_t)(totalLength - 2),
+                                     0xEE, (uint8_t)(totalLength - 4),
+                                     0x40, 0x02, 0x00, 0x00,
+                                     0x68, frequencyPayloadLength };
+
+  size_t offset = FREQ_ALLHEADERSSIZE;
+
+  // Each value <= 127 is 1 byte, above is 2 bytes.
+
+  // Finger Frequency.
+  frequency[offset++] = 0x80; // Finger Frequency identifier.
+  frequency[offset++] = fingerFrequencyLength;
+  frequency[offset++] = (uint8_t)fingerFrequencyValue[0];
+  if (fingerFrequencyLength == 2)
+  {
+    frequency[offset++] = (uint8_t)fingerFrequencyValue[1];
+  }
+
+  // Idle Frequency.
+  frequency[offset++] = 0x82; // Idle Frequency identifier.
+  frequency[offset++] = idleFrequencyLength;
+  frequency[offset++] = (uint8_t)idleFrequencyValue[0];
+  if (idleFrequencyLength == 2)
+  {
+    frequency[offset++] = (uint8_t)idleFrequencyValue[1];
+  }
+
+  if (Write(frequency)) // We assume that the end user has called GetMessage prior to calling this method
+  {
+    failed = true;
+  }
+  else
+  {
+    lastSentMessage = MessageType::FREQUENCYTYPE;
+  }
+
+  return !failed;
 }
 
 
@@ -317,16 +587,50 @@ bool Zforce::TouchFormat()
   return !failed;
 }
 
+bool Zforce::GetPlatformInformation()
+{
+  bool failed = false;
+  uint8_t platformInformation[] = {0xEE, 0x08, 0xEE, 0x06, 0x40, 0x02, 0x00, 0x00, 0x6C, 0x00};
+
+  if (Write(platformInformation))
+  {
+    failed = true;
+  }
+  else
+  {
+    lastSentMessage = MessageType::PLATFORMINFORMATIONTYPE;
+  }
+
+  return !failed;
+}
+
 bool Zforce::TouchMode(uint8_t mode, int16_t clickOnTouchRadius, int16_t clickOnTouchTime)
 {
   bool failed = false;
-  uint8_t touchMode[] = {0xEE, 0x14, 0xEE, 0x12, 0x40, 
-                           0x02, 0x02, 0x00, 0x7F, 0x24, 0x0B, 
-                           0x80, 0x01, mode, 0x81, 0x02, 
-                           (uint8_t)(clickOnTouchTime << 8), 
-                           (uint8_t)(clickOnTouchTime & 0xFF), 
-                           0x82, 0x02, (uint8_t)(clickOnTouchRadius << 8), 
-                           (uint8_t)(clickOnTouchRadius & 0xFF) };
+  uint8_t serializedTime[2];
+  uint8_t serializedRadius[2];
+    
+  uint8_t timeLength = SerializeInt(clickOnTouchTime, serializedTime);
+  uint8_t radiusLength = SerializeInt(clickOnTouchRadius, serializedRadius);
+  uint8_t combinedLength = timeLength + radiusLength;
+  uint8_t touchMode[18 + combinedLength] = {0xEE, (uint8_t)(16 + combinedLength), 0xEE, (uint8_t)(14 + combinedLength), 0x40, 
+                           0x02, 0x02, 0x00, 0x7F, 0x24, (uint8_t)(7 + combinedLength), 
+                           0x80, 0x01, mode, 0x81, timeLength, serializedTime[0] };
+
+  uint8_t index = 17;
+  if (timeLength == 2)
+  {
+    touchMode[index++] = serializedTime[1];
+  }
+
+  touchMode[index++] = 0x82;
+  touchMode[index++] = radiusLength;
+  touchMode[index++] = serializedRadius[0];
+
+  if (radiusLength == 2)
+  {
+    touchMode[index] = serializedRadius[1];
+  }
 
   if (Write(touchMode))
   {
@@ -343,9 +647,16 @@ bool Zforce::TouchMode(uint8_t mode, int16_t clickOnTouchRadius, int16_t clickOn
 bool Zforce::FloatingProtection(bool enabled, uint16_t time)
 {
   bool failed = false;
-  uint8_t floatingProtection[] = {0xEE, 0x11, 0XEE, 0x0F, 0x40, 0x02, 0x02, 0x00, 0x73,
-                                  0x09, 0xA8, 0x07, 0x80, 0x01, (uint8_t)(enabled ? 0xFF : 0x00), 0x81,
-                                  0x02, (uint8_t)(time << 8), (uint8_t)(time & 0xFF)};
+  uint8_t serializedTime[2];
+  uint8_t timeLength = SerializeInt(time, serializedTime);
+  uint8_t floatingProtection[17 + timeLength] = {0xEE, (uint8_t)(15 + timeLength), 0xEE, (uint8_t)(13 + timeLength), 0x40, 0x02, 0x02, 0x00, 0x73,
+                                  (uint8_t)(7 + timeLength), 0xA8, (uint8_t)(5 + timeLength), 0x80, 0x01, (uint8_t)(enabled ? 0xFF : 0x00), 0x81,
+                                  timeLength, serializedTime[0]};
+
+  if (timeLength == 2)
+  {
+    floatingProtection[18] = serializedTime[1];
+  }
 
   if (Write(floatingProtection))
   {
@@ -400,9 +711,12 @@ Message* Zforce::VirtualParse(uint8_t* payload)
     {
       if (payload[8] == 0xA0) // Check the identifier if this is a touch message or something else.
       {
-        msg = new TouchMessage;
-        msg->type = MessageType::TOUCHTYPE;
-        ParseTouch((TouchMessage*)msg, payload);
+        if (this->touchDescriptorInitialized)
+        {
+          msg = new TouchMessage;
+          msg->type = MessageType::TOUCHTYPE;
+          ParseTouch((TouchMessage*)msg, payload);
+        }
       }
       else if (payload[8] == 0x63)
       {
@@ -493,11 +807,19 @@ void Zforce::ParseResponse(uint8_t* payload, Message** msg)
       (*(msg))->type = MessageType::TOUCHMODETYPE;
       ParseTouchMode((TouchModeMessage*)(*(msg)), payload);
     }
+    break;
     case MessageType::FLOATINGPROTECTIONTYPE:
     {
       (*(msg)) = new FloatingProtectionMessage;
       (*(msg))->type = MessageType::FLOATINGPROTECTIONTYPE;
       ParseFloatingProtection((FloatingProtectionMessage *)(*(msg)), payload);
+    }
+    break;
+    case MessageType::PLATFORMINFORMATIONTYPE:
+    {
+      (*(msg)) = new PlatformInformationMessage;
+      (*(msg))->type = MessageType::PLATFORMINFORMATIONTYPE;
+      ParsePlatformInformation((PlatformInformationMessage*)(*(msg)), &payload[2], payload[1] - 1);
     }
     break;
     default:
@@ -538,11 +860,92 @@ void Zforce::ParseTouchDescriptor(TouchDescriptorMessage* msg, uint8_t* payload)
   }
 }
 
+void Zforce::ParsePlatformInformation(PlatformInformationMessage *msg, uint8_t *rawData, uint32_t length)
+{
+  (void)length;
+  uint16_t value = 0;
+  uint16_t valueLength = 0;
+
+  rawData += GetNumLengthBytes(&rawData[1]) + 5; // Skip response byte + ASN.1 length + address
+  rawData += GetNumLengthBytes(&rawData[1]) + 1; // Skip ASN.1 Device Information + length
+  
+  uint32_t platformInformationLength = GetLength(&rawData[1]);
+  rawData += GetNumLengthBytes(&rawData[1]) + 1; // PlatformInformation length + PlatformInformation application identifier
+
+  uint32_t position = 0;
+
+  while (position < platformInformationLength)
+  {
+    switch (rawData[position++])
+    {
+      case 0x84: // FirmwareVersionMajor
+      {
+        valueLength = rawData[position++];
+        if (valueLength == 2)
+        {
+            value = rawData[position++] << 8;
+            value |= rawData[position++];
+        }
+        else
+        {
+            value = rawData[position++];
+        }
+
+        msg->firmwareVersionMajor = value;
+        break;
+      case 0x85: // FirmwareVersionMinor
+        valueLength = rawData[position++];
+        if (valueLength == 2)
+        {
+            value = rawData[position++] << 8;
+            value |= rawData[position++];
+        }
+        else
+        {
+            value = rawData[position++];
+        }
+
+        msg->firmwareVersionMinor = value;
+        break;
+      }
+      case 0x8A: // MCUUniqueIdentifier
+      {
+        uint8_t *MCUUniqueIdentifier = nullptr;
+        uint32_t MCUUniqueIdentifierLength;
+        DecodeOctetString(rawData, &position, &MCUUniqueIdentifierLength, &MCUUniqueIdentifier);
+
+        // Each byte gets converted into its hex representation, which takes 2 bytes, then we add space for the null byte.
+        const uint32_t bufferLength = (MCUUniqueIdentifierLength * 2) + 1;
+
+        char* mcuIdBuffer = (char *)malloc(bufferLength);
+        mcuIdBuffer[MCUUniqueIdentifierLength - 1] = 0; // Add null byte.
+        int writeSize = 0;
+        for (size_t i = 0; i < MCUUniqueIdentifierLength; i++)
+        {
+            writeSize += snprintf(mcuIdBuffer + writeSize, bufferLength - writeSize, "%02X", MCUUniqueIdentifier[i]);
+        }
+        free(MCUUniqueIdentifier);
+        msg->mcuUniqueIdentifier = mcuIdBuffer;
+        msg->mcuUniqueIdentifierLength = writeSize;
+        break;
+      }
+      default:
+      {
+        position += rawData[position];
+        position++;
+        break;
+      }
+    }
+  }
+}
+
 void Zforce::ParseTouchMode(TouchModeMessage* msg, uint8_t* payload)
 {
   const uint8_t offset = 9;
-  uint16_t value = 0;
   uint16_t valueLength = 0;
+
+  msg->clickOnTouchTime = -1;   // FW <=1.55 doesn't reply properly when mode = Disabled.
+  msg->clickOnTouchRadius = -1; // We set them to -1, signaling the data is invalid.
 
   for (int i = offset; i < payload[10] + offset; i++)
   {
@@ -633,7 +1036,7 @@ void Zforce::ParseTouchActiveArea(TouchActiveAreaMessage* msg, uint8_t* payload)
   uint16_t value = 0;
   uint16_t valueLength = 0;
 
-  for (int i = offset; i < payload[11] + offset; i++) // 10 = index for SubTouchActiveArea struct, 11 index for length of SubTouchActiveArea struct
+  for (int i = offset; i < payload[11] + offset; i++) // 10 = index for TouchActiveArea struct, 11 index for length of TouchActiveArea struct
   {
     switch (payload[i])
     {
@@ -805,7 +1208,7 @@ void Zforce::ParseFlipXY(FlipXYMessage* msg, uint8_t* payload)
 
 void Zforce::ParseDetectionMode(DetectionModeMessage* msg, uint8_t* payload)
 {
-  uint8_t offset = payload[11] + 11; // 11 = Index for SubTouchActiveArea length
+  uint8_t offset = payload[11] + 11; // 11 = Index for TouchActiveArea length
   offset += payload[offset + 2]; // Add the length of the following Sequence to the offset
   const uint8_t length = payload[1] + 2;
 
@@ -840,17 +1243,18 @@ void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload)
     const uint8_t expectedTouchLength = touchMetaInformation.touchByteCount + 2;
     msg->touchCount = payload[9] / expectedTouchLength;
     msg->touchData = new TouchData[msg->touchCount];
+    msg->timestamp = 0;
     
     if ((payload[1] + 2) > (payloadOffset + (expectedTouchLength * msg->touchCount))) // Check for timestamp
     {
-      uint8_t timestampIndex = payloadOffset + (touchMetaInformation.touchByteCount * msg->touchCount);
+      uint8_t timestampIndex = payloadOffset + (expectedTouchLength * msg->touchCount) - 2;
       if (payload[timestampIndex] == 0x58) // Check for timestamp identifier
       {
         uint8_t timestampLength = payload[timestampIndex + 1];
-        uint8_t valueIndex = timestampIndex + timestampLength + 1;
-        for (int8_t i = 0; i < timestampLength; i++)
+        for (int index = (timestampIndex + 2); index < (timestampIndex + 2 + timestampLength); index++)
         {
-          msg->timestamp |= payload[valueIndex - i] << (8 * i);
+          msg->timestamp <<= 8;
+          msg->timestamp |= payload[index];
         }
       }
     }
@@ -993,7 +1397,62 @@ void Zforce::ParseTouch(TouchMessage* msg, uint8_t* payload)
 
 void Zforce::ClearBuffer(uint8_t* buffer)
 {
-  memset(buffer, 0, MAX_PAYLOAD);
+  memset(buffer, 0, BUFFER_SIZE);
+}
+
+uint8_t Zforce::SerializeInt(int32_t value, uint8_t* serialized)
+{
+  if (value < 128)
+  {
+    serialized[0] = (uint8_t)(value & 0xFF);
+    return 1;
+  }
+  else
+  {
+    serialized[0] = (uint8_t)(value >> 8);
+    serialized[1] = (uint8_t)(value & 0xFF);
+    return 2;
+  }
+}
+
+void Zforce::DecodeOctetString(uint8_t* rawData, uint32_t* position, uint32_t* destinationLength, uint8_t** destination)
+{
+    uint32_t length = rawData[(*position)++];
+    *destinationLength = length;
+    *destination = (uint8_t*)malloc(length);
+    memcpy(*destination, &rawData[(*position)], length);
+    (*position) += length;
+}
+
+uint16_t Zforce::GetLength(uint8_t* rawData)
+{
+    int numLengthBytes = 0;
+    int length = 0;
+    if (rawData[0] & 0x80) // We have long length form
+    {
+        numLengthBytes = rawData[0] - 0x80;
+        for (int i = 0; i < numLengthBytes; i++)
+        {
+            length += rawData[i + 1];
+        }
+    }
+    else
+    {
+        length = rawData[0];
+    }
+
+    return length;
+}
+
+uint8_t Zforce::GetNumLengthBytes(uint8_t* rawData)
+{
+    uint8_t numLengthBytes = 1;
+    if (rawData[0] & 0x80) // We have long length form
+    {
+        numLengthBytes = (rawData[0] - 0x80) + 1;
+    }
+
+    return numLengthBytes;
 }
 
 Zforce zforce = Zforce();
